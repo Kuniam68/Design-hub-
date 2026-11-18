@@ -357,7 +357,8 @@ window.mediScriptSignOut=async function(){
 </style>
 <style id="workspace-navigation-styles">
 :root{--workspace-header-height:64px}
-body{padding-top:var(--workspace-header-height)!important;height:100dvh!important}
+/* Header offset only; preserve the original working body layout. */
+body{padding-top:var(--workspace-header-height);height:100vh;box-sizing:border-box}
 .workspace-header{position:fixed;inset:0 0 auto 0;height:var(--workspace-header-height);z-index:1000;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 clamp(12px,2.5vw,30px);background:#f8fcfa;border-bottom:1px solid #d8e9e3;box-shadow:0 3px 16px #174d4520;color:#174d47;font-family:'Poppins',sans-serif}
 .workspace-header-left,.workspace-header-right{display:flex;align-items:center;gap:12px;min-width:0}
 .workspace-brand{font-weight:700;font-size:clamp(14px,2vw,18px);white-space:nowrap}
@@ -377,87 +378,20 @@ body{padding-top:var(--workspace-header-height)!important;height:100dvh!importan
 .workspace-nav-item.planned{color:#657b77}
 .workspace-nav-separator{border-top:1px solid #e4eee9;margin:13px 8px}
 .workspace-menu-notice{margin:12px 8px 0;padding:12px;background:#edf7f3;border-radius:10px;font-size:12px;line-height:1.5;color:#235b51}
-.form-panel,.preview-panel{height:calc(100dvh - var(--workspace-header-height))!important}
 #doctor-profile-section{scroll-margin-top:85px}
-/* Structural layout: form and preview are direct siblings in one container. */
-.workspace-content{
-  display:flex;
-  flex:1 1 auto;
-  min-width:0;
-  min-height:0;
-  height:calc(100dvh - var(--workspace-header-height));
+@media(max-width:900px){
+  /* Match the original mobile flow: form followed by preview. */
+  body{height:auto;min-height:100vh;overflow:auto}
 }
-.workspace-content>.form-panel,
-.workspace-content>.preview-panel{
-  height:100%!important;
-  min-height:0;
+@media(max-width:560px){
+  .workspace-header{padding:0 10px}
+  .workspace-header-user,.workspace-brand small{display:none}
+  .workspace-header-left,.workspace-header-right{gap:8px}
+  .workspace-header-logout{padding:9px 10px}
 }
-@media screen and (max-width:1199px){
-  html{height:auto!important;overflow-x:hidden!important}
-  body{
-    display:block!important;
-    height:auto!important;
-    min-height:100dvh!important;
-    overflow-x:hidden!important;
-    overflow-y:auto!important;
-    padding-top:var(--workspace-header-height)!important;
-  }
-  .workspace-content{
-    display:flex!important;
-    flex-direction:column!important;
-    height:auto!important;
-    min-height:0!important;
-    width:100%!important;
-    overflow:visible!important;
-    position:relative!important;
-  }
-  .workspace-content>.form-panel,
-  .workspace-content>.preview-panel{
-    display:block!important;
-    position:static!important;
-    box-sizing:border-box!important;
-    width:100%!important;
-    max-width:100%!important;
-    min-width:0!important;
-    height:auto!important;
-    min-height:0!important;
-    max-height:none!important;
-    flex:none!important;
-    overflow:visible!important;
-    margin:0!important;
-    transform:none!important;
-  }
-  .workspace-content>.form-panel{
-    order:1!important;
-    z-index:auto!important;
-    box-shadow:none!important;
-    padding:clamp(12px,2vw,24px)!important;
-  }
-  .workspace-content>.preview-panel{
-    order:2!important;
-    z-index:auto!important;
-    clear:both!important;
-    padding:20px 8px 45px!important;
-    background:var(--bg)!important;
-    text-align:center!important;
-  }
-  #previewPanel>.page-scaler{
-    display:block!important;
-    position:relative!important;
-    max-width:none!important;
-    margin:0 auto 24px!important;
-    text-align:left!important;
-  }
-  .section-card{max-width:100%!important}
-}
-@media(max-width:560px){.workspace-header{padding:0 10px}.workspace-header-user{display:none}.workspace-brand small{display:none}.workspace-header-left,.workspace-header-right{gap:8px}.workspace-header-logout{padding:9px 10px}}
 @media print{
-  body{padding-top:0!important;height:auto!important}
   .workspace-header,.workspace-drawer,.workspace-backdrop{display:none!important}
-  .workspace-content{display:block!important;height:auto!important;min-height:0!important;overflow:visible!important}
-  .workspace-content>.form-panel{display:none!important}
-  .workspace-content>.preview-panel{display:block!important;position:static!important;height:auto!important;width:210mm!important;max-width:none!important;padding:0!important;overflow:visible!important}
-  .page-scaler{max-width:none!important}
+  body{padding-top:0!important}
 }
 </style>
 </head>
@@ -502,7 +436,6 @@ body{padding-top:var(--workspace-header-height)!important;height:100dvh!importan
 </script>
 
 
-<main class="workspace-content" id="workspaceContent">
 <!-- ================= LEFT PANEL: INPUTS ================= -->
 <div class="form-panel">
 
@@ -847,7 +780,6 @@ body{padding-top:var(--workspace-header-height)!important;height:100dvh!importan
 
 <!-- ================= RIGHT PANEL: LIVE PREVIEW ================= -->
 <div class="preview-panel" id="previewPanel"></div>
-</main>
 
 <script>
   const today = new Date();
@@ -1495,7 +1427,7 @@ body{padding-top:var(--workspace-header-height)!important;height:100dvh!importan
   /* Scale pages to fit the preview panel (preview only; export uses a clean full-size clone) */
   function fitPreview() {
     const panel = document.getElementById('previewPanel');
-    const avail = Math.max(180, panel.clientWidth - (window.innerWidth < 1200 ? 16 : 40));
+    const avail = panel.clientWidth - 40;
     const scale = Math.min(1, Math.max(0.3, avail / 794));
     panel.querySelectorAll('.page-scaler').forEach(w => {
       w.style.width = (794 * scale) + 'px';
