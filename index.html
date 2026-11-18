@@ -8,7 +8,7 @@
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import {getAuth,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
-import {getFirestore,doc,getDoc,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+import {getFirestore,doc,getDoc,setDoc,serverTimestamp,collection,addDoc,getDocs,deleteDoc,query,orderBy,limit} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 import {firebaseConfig} from './firebase-config.js';
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
@@ -77,6 +77,29 @@ window.savePracticeLocationsToCloud=async function(items,activeId){
   window.updatePreview?.();
   window.dispatchEvent(new Event('mediscript-locations-loaded'));
   return true;
+};
+/* History records are saved only by explicit user action. Each doctor's records
+   live in doctors/{uid}/prescriptions; server rules must restrict access by uid. */
+window.historyCloud={
+ async save(record){
+  const user=auth.currentUser;
+  if(!user||profileLoadedFor!==user.uid)throw Error('Sign in and wait for your profile to load.');
+  if(!record||typeof record!=='object'||!record.patientName)throw Error('Patient name is required.');
+  const ref=await addDoc(collection(db,'doctors',user.uid,'prescriptions'),{...record,createdAt:serverTimestamp()});
+  return ref.id;
+ },
+ async list(){
+  const user=auth.currentUser;
+  if(!user||profileLoadedFor!==user.uid)throw Error('Sign in and wait for your profile to load.');
+  const snapshot=await getDocs(query(collection(db,'doctors',user.uid,'prescriptions'),orderBy('createdAt','desc'),limit(100)));
+  return snapshot.docs.map(d=>({id:d.id,...d.data()}));
+ },
+ async remove(id){
+  const user=auth.currentUser;
+  if(!user||profileLoadedFor!==user.uid)throw Error('Sign in and wait for your profile to load.');
+  if(typeof id!=='string'||!/^[A-Za-z0-9]{10,40}$/.test(id))throw Error('Invalid prescription ID.');
+  await deleteDoc(doc(db,'doctors',user.uid,'prescriptions',id));
+ }
 };
 window.saveDoctorProfileToCloud=async function(){
   const user=auth.currentUser;
@@ -678,6 +701,51 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 @media(max-width:650px){.practice-top{padding:27px 20px 24px}.practice-top h2{font-size:27px}.practice-content{padding:19px}.practice-toolbar{align-items:flex-start}.practice-toolbar strong{font-size:17px}.practice-toolbar button{padding:12px}.practice-list{grid-template-columns:1fr}.practice-card{padding:19px}.practice-card.active{padding:18px}.practice-card-details{min-height:0}.practice-edit-dialog{padding:22px}}
 @media(prefers-reduced-motion:reduce){.practice-dialog{animation:none}.practice-card{transition:none}.practice-card:hover{transform:none}}
 </style>
+<style id="history-styles">
+.history-dialog{border:0;padding:0;width:min(840px,calc(100vw - 24px));max-height:calc(100dvh - 26px);overflow:auto;margin:auto;border-radius:24px;background:#f6f9f8;color:#183d38;font-family:inherit;box-shadow:0 30px 100px #092e3550;animation:historyEnter .28s ease-out}
+.history-dialog::backdrop{background:#092e34ad;backdrop-filter:blur(5px)}
+.history-header{background:linear-gradient(125deg,#123b47,#0c766e);color:white;padding:30px;position:relative}
+.history-kicker{font-size:10px;letter-spacing:2px;color:#a3e6d8;font-weight:800;margin-bottom:10px}
+.history-header h2{font-size:29px;letter-spacing:-.7px;margin:0 40px 8px 0}
+.history-header p{font-size:13px;color:#c4e8e0;margin:0}
+.history-x{position:absolute;right:20px;top:18px;border:1px solid #ffffff55;background:#ffffff22;color:#fff;width:38px;height:38px;border-radius:11px;font-size:24px;cursor:pointer}
+.history-stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+.history-stats span{background:#ffffff1f;border:1px solid #ffffff35;border-radius:30px;padding:8px 13px;font-size:11px;font-weight:700}
+.history-main{padding:26px}
+.history-actions{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:21px}
+.history-actions strong{font-size:19px;display:block}
+.history-actions small{font-size:12px;color:#668079;display:block;line-height:1.5;margin-top:4px}
+.history-primary{background:#0d7b70;color:#fff;border:0;border-radius:12px;padding:13px 16px;font:700 12px inherit;cursor:pointer;white-space:nowrap;box-shadow:0 6px 16px #0b766b24}
+.history-filters{display:flex;align-items:end;gap:10px;margin-bottom:17px}
+.history-search-label{display:block;flex:1;font-size:11px;font-weight:700;color:#4d6c63}
+.history-search-label input{display:block;width:100%;min-width:0;margin-top:6px;padding:12px 14px;border:1px solid #d4e6de;border-radius:11px;background:#fff;font:inherit;font-size:13px;color:#173f39}
+.history-filters button,.history-footer button{border:1px solid #d3e4dd;background:#eaf2ee;color:#225d53;border-radius:10px;padding:12px 14px;font:700 12px inherit;cursor:pointer}
+.history-list{display:grid;gap:12px}
+.history-record{background:#fff;border:1px solid #e0ebe6;border-radius:16px;padding:18px;box-shadow:0 5px 16px #0d4a4010}
+.history-record-top{display:flex;align-items:start;gap:13px}
+.history-record-icon{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:#e4f5ed;color:#087768;font-size:22px;flex:none}
+.history-record-main{flex:1;min-width:0}
+.history-record-main strong{display:block;font-size:15px;overflow-wrap:anywhere}
+.history-record-main small{font-size:11px;color:#6c857d;display:block;margin-top:5px}
+.history-record-diagnosis{font-size:12px;color:#3d655c;margin:12px 0 0;overflow-wrap:anywhere}
+.history-record-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #edf3ef}
+.history-record-buttons button{border:1px solid #d8e7df;background:#f4f9f6;border-radius:9px;padding:9px 12px;color:#226358;font:700 11px inherit;cursor:pointer}
+.history-record-buttons .history-open{background:#0c796d;color:#fff;border-color:#0c796d}
+.history-record-buttons .history-delete{color:#af443c;background:#fff4f1;border-color:#f3ded9}
+.history-empty{padding:40px 20px;border:1px dashed #b8d6ca;border-radius:17px;text-align:center;background:#fff}
+.history-empty span{display:block;font-size:37px;margin-bottom:10px}
+.history-empty strong{display:block;font-size:17px}
+.history-empty p{font-size:12px;color:#6a827a;line-height:1.6;margin-top:7px}
+.history-status{min-height:18px;margin-top:14px;font-size:12px;color:#256d60}
+.history-footer{border-top:1px solid #dce9e3;margin-top:13px;padding-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.history-footer span{font-size:11px;color:#728980}
+.history-dialog button:disabled{opacity:.55;cursor:wait}
+.history-dialog button:focus-visible,.history-dialog input:focus-visible{outline:3px solid #1aab96;outline-offset:2px}
+@keyframes historyEnter{from{opacity:0;transform:translateY(17px) scale(.98)}to{opacity:1;transform:none}}
+@media(max-width:650px){.history-header{padding:24px 19px}.history-header h2{font-size:25px}.history-main{padding:18px}.history-actions{align-items:stretch;flex-direction:column}.history-primary{width:100%}.history-footer{align-items:flex-start;flex-direction:column}.history-filters button{padding:12px 10px}}
+@media(prefers-reduced-motion:reduce){.history-dialog{animation:none}}
+@media print{.history-dialog{display:none!important}}
+</style>
 </head>
 <body>
 <header class="workspace-header" aria-label="MediScript Pro navigation">
@@ -696,7 +764,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <button type="button" class="workspace-nav-item" data-workspace-action="prescription"><span>✚</span>New Prescription</button>
   <button type="button" class="workspace-nav-item" data-workspace-action="profile"><span>👤</span>My Profile</button>
   <button type="button" class="workspace-nav-item" data-workspace-action="locations"><span>🏥</span>Hospitals &amp; Chambers</button>
-  <button type="button" class="workspace-nav-item planned" data-workspace-action="history"><span>🕘</span>Prescription History <small>Planned</small></button>
+  <button type="button" class="workspace-nav-item" data-workspace-action="history"><span>🕘</span>Prescription History</button>
   <button type="button" class="workspace-nav-item planned" data-workspace-action="patients"><span>👥</span>Patient Directory <small>Planned</small></button>
   <button type="button" class="workspace-nav-item planned" data-workspace-action="templates"><span>📋</span>Templates &amp; Medicine Favorites <small>Planned</small></button>
   <button type="button" class="workspace-nav-item planned" data-workspace-action="settings"><span>⚙️</span>Settings &amp; Appearance <small>Planned</small></button>
@@ -714,6 +782,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  if(action==='logout'){toggle(false);window.mediScriptSignOut();return;}
  if(action==='profile'){toggle(false);window.openMyProfile();return;}
  if(action==='locations'){toggle(false);window.openPracticeLocations();return;}
+ if(action==='history'){toggle(false);window.openPrescriptionHistory();return;}
  if(action==='prescription'){toggle(false);window.startNewPrescription();return;}
  notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
  });
@@ -1044,6 +1113,25 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  window.addEventListener('mediscript-locations-loaded',()=>{if(dialog.open)reload();});
 })();
 </script>
+<dialog class="history-dialog" id="historyDialog" aria-labelledby="historyTitle">
+ <header class="history-header">
+  <button type="button" class="history-x" id="historyClose" aria-label="Close prescription history">×</button>
+  <div class="history-kicker">MEDISCRIPT PRO · CLINICAL RECORDS</div>
+  <h2 id="historyTitle">Prescription History</h2>
+  <p>Your saved prescriptions, organized and ready when you need them.</p>
+  <div class="history-stats"><span id="historyTotal">— saved records</span><span>🔒 Your signed-in account</span></div>
+ </header>
+ <div class="history-main">
+  <div class="history-actions">
+   <div><strong>Saved prescriptions</strong><small>Save intentionally, search by patient, and reopen previous prescriptions.</small></div>
+   <button type="button" id="historySaveCurrent" class="history-primary">＋ Save current prescription</button>
+  </div>
+  <div class="history-filters"><label class="history-search-label" for="historySearch">Search records<input id="historySearch" type="search" placeholder="Search patient name, phone or diagnosis" autocomplete="off"></label><button type="button" id="historyRefresh">↻ Refresh</button></div>
+  <div id="historyList" class="history-list" aria-live="polite"></div>
+  <p id="historyStatus" class="history-status" role="status" aria-live="polite"></p>
+  <footer class="history-footer"><span>Records are saved to Firebase only when you select Save.</span><button type="button" id="historyDone">Close</button></footer>
+ </div>
+</dialog>
 <!-- ================= LEFT PANEL: INPUTS ================= -->
 <div class="form-panel">
 
