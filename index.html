@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MediScript Pro | A4 Print & Download</title>
-<style id="auth-visibility">body{visibility:hidden!important}</style>
+<style id="auth-visibility">body{visibility:hidden!important} .history-edited{display:inline-flex;align-items:center;margin-left:8px;padding:5px 10px;border-radius:999px;background:#e6efff;color:#254b85;font-size:12px;font-weight:700;}
+</style>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import {getAuth,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
@@ -94,7 +95,8 @@ window.historyCloud={
    if(data.saved||data.favorite||!data.expiresAt||data.expiresAt.toMillis()>Date.now())return ref.id;
   }
   const now=Date.now();
-  await setDoc(ref,{...record,saved:false,favorite:false,createdAt:serverTimestamp(),expiresAt:new Date(now+24*60*60*1000)},{merge:false});
+  const sourceId=typeof record.editedFrom==='string'?record.editedFrom:'';
+  await setDoc(ref,{...record,edited:Boolean(sourceId),editedFrom:sourceId,saved:false,favorite:false,createdAt:serverTimestamp(),expiresAt:new Date(now+24*60*60*1000)},{merge:false});
   return ref.id;
  },
  async list(){
@@ -105,7 +107,7 @@ window.historyCloud={
   const expired=rows.filter(x=>!x.saved&&!x.favorite&&x.expiresAt&&x.expiresAt.toMillis()<=Date.now());
   // Best-effort deletion when History opens. Enable Firestore TTL on expiresAt
   // for server-side deletion even if no doctor opens the app.
-  if(expired.length)await Promise.allSettled(expired.map(x=>deleteDoc(doc(db,'doctors',user.uid,'prescriptions',x.id))));
+  if(expired.length)Promise.allSettled(expired.map(x=>deleteDoc(doc(db,'doctors',user.uid,'prescriptions',x.id)))).catch(console.error);
   return rows.filter(x=>x.saved||x.favorite||!x.expiresAt||x.expiresAt.toMillis()>Date.now());
  },
  async retain(id,favorite=false){
@@ -2356,7 +2358,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 /* ===== PRESCRIPTION HISTORY: opt-in saves only, never automatic ===== */
 (function(){
  const dialog=document.getElementById('historyDialog'),list=document.getElementById('historyList'),status=document.getElementById('historyStatus'),search=document.getElementById('historySearch');
- let records=[],busy=false,loadFailed=false;
+ let records=[],busy=false,loadFailed=false,hasLoaded=false,editingSourceId='';
  const filter=document.getElementById("historyFilter");
  let captureInFlight=null;
  let lastCaptureError='';
@@ -2370,7 +2372,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    const fields={};
    mainControls().forEach((el,i)=>fields[String(i)]=controlValue(el));
    const medicines=medRows().map(row=>({values:Array.from(row.querySelectorAll('input,select,textarea')).map(controlValue)}));
-   return {version:1,patientName:String(document.getElementById('pName').value||'').trim().slice(0,160),
+   return {version:1,editedFrom:editingSourceId,patientName:String(document.getElementById('pName').value||'').trim().slice(0,160),
      patientPhone:String(document.getElementById('pPhone').value||'').trim().slice(0,80),
      patientAge:String(document.getElementById('pAge').value||'').trim().slice(0,40),
      diagnosis:String(document.getElementById('provDx')?.value||'').trim().slice(0,400),
@@ -2424,12 +2426,13 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
        const until=r.expiresAt?.toDate?.();
        meta.append(el('span','history-temp','◷ Temporary · expires '+(until?until.toLocaleString():'within 24 hours')));
      }
+     if(r.edited||r.editedFrom)meta.append(el('span','history-edited','✎ Edited'));
      card.append(meta);
      if(r.diagnosis)card.append(el('p','history-record-diagnosis',r.diagnosis.slice(0,240)));
      const actions=el('div','history-record-buttons');
      actions.append(button('↗ Open prescription','history-open',()=>{
        if(hasUnsavedWork()&&!confirm('Open this saved prescription? Current unsaved patient information will be replaced. Your doctor profile stays unchanged.'))return;
-       try{restore(r);dialog.close();document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});}
+       try{restore(r);editingSourceId=r.id;dialog.close();document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});}
        catch(error){notify('Unable to open this record. '+error.message,true);}
      }));
      if(!r.saved)actions.append(button('Save permanently','',async()=>{
@@ -2456,7 +2459,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  }
  async function refresh(){
    if(busy)return;busy=true;notify('Loading prescription history…');list.replaceChildren(el('div','history-empty','Loading records…'));
-   try{records=await window.historyCloud.list();loadFailed=false;notify(records.length?'Your prescription history is ready.':'No prescriptions in history yet.');}
+   try{records=await window.historyCloud.list();hasLoaded=true;loadFailed=false;notify(records.length?'Your prescription history is ready.':'No prescriptions in history yet.');}
    catch(error){records=[];loadFailed=true;const code=String(error?.code||'unknown');const detail=String(error?.message||'').slice(0,240);notify('History load failed ['+code+']: '+detail,true);console.error('History load failed',error);}
    finally{busy=false;render();}
  }
@@ -2476,7 +2479,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  search.addEventListener('input',render);
  filter.addEventListener('change',render);
  window.addEventListener('mediscript-history-error',e=>{console.warn(e.detail);if(dialog.open)notify(e.detail,true);else {const status=document.getElementById('historyStatus');if(status){status.textContent=e.detail;status.style.color='#b91c1c';} }});
- window.openPrescriptionHistory=async()=>{dialog.showModal();search.value='';filter.value='all';await refresh();const previous=lastCaptureError||(()=>{try{return sessionStorage.getItem('mediscript-history-capture-error')||'';}catch(_){return '';}})();if(previous&&!loadFailed)notify(previous,true);};
+ window.openPrescriptionHistory=async()=>{dialog.showModal();search.value='';filter.value='all';if(hasLoaded){render();notify('Checking for updates…');}await refresh();const previous=lastCaptureError||(()=>{try{return sessionStorage.getItem('mediscript-history-capture-error')||'';}catch(_){return '';}})();if(previous&&!loadFailed)notify(previous,true);};
 })();
 
 </script>
