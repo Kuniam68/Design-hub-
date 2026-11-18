@@ -538,6 +538,13 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .my-profile-photo-button:focus-visible,.my-profile-photo-remove:focus-visible{outline:3px solid #fff;outline-offset:3px}
 @media(max-width:640px){.my-profile-photo-button,.my-profile-photo-button .my-profile-avatar,.my-profile-photo-button img{width:60px;height:60px}.my-profile-camera{width:24px;height:24px;font-size:11px}}
 </style>
+<style id="my-profile-photo-icon-refinement">
+.my-profile-photo-button .my-profile-avatar{display:grid;place-items:center;background:#ffffff20;border:2px solid #ffffff80;color:#f0fffa}
+.my-profile-photo-button .my-profile-avatar svg{width:34px;height:34px;transition:transform .18s ease}
+.my-profile-photo-button:hover .my-profile-avatar svg{transform:scale(1.08)}
+@media(max-width:640px){.my-profile-photo-button .my-profile-avatar svg{width:28px;height:28px}}
+@media(prefers-reduced-motion:reduce){.my-profile-photo-button .my-profile-avatar svg{transition:none}}
+</style>
 </head>
 <body>
 <header class="workspace-header" aria-label="MediScript Pro navigation">
@@ -603,9 +610,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     <div class="my-profile-identity">
       <div class="my-profile-photo-area">
         <button type="button" class="my-profile-photo-button" id="myProfilePhotoButton" aria-label="Add or change optional profile photo" title="Add or change profile photo">
-          <span class="my-profile-avatar" id="myProfileAvatar" aria-hidden="true">✚</span>
+          <span class="my-profile-avatar" id="myProfileAvatar" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/><path d="M18 10h.01"/></svg></span>
           <img id="myProfilePhotoPreview" alt="Your profile photo" hidden>
-          <span class="my-profile-camera" aria-hidden="true">📷</span>
+          
         </button>
         <input type="file" id="myProfilePhotoInput" accept="image/jpeg,image/png,image/webp" hidden aria-label="Choose profile photo">
         <button type="button" class="my-profile-photo-remove" id="myProfilePhotoRemove" hidden>Remove photo</button>
@@ -740,7 +747,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     fields.forEach(id=>form.elements.namedItem(id).value=initial[id]);
     const name=initial.dName.trim()||'Doctor profile';
     document.getElementById('myProfileDisplayName').textContent=name;
-    document.getElementById('myProfileAvatar').textContent=name.replace(/^Dr\.?\s*/i,'').trim().charAt(0).toUpperCase()||'✚';
+
     document.getElementById('myProfileAccount').textContent=window.getDoctorAccountEmail?.()||'Signed-in account';
     const ready=window.isDoctorProfileReady?.()===true;
     save.disabled=!ready;
