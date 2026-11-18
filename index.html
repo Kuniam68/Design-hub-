@@ -399,6 +399,24 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   body{padding-top:0!important;height:auto!important}
 }
 </style>
+<style id="new-prescription-dialog-styles">
+.new-rx-dialog{border:0;border-radius:20px;padding:0;width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;color:#183d39;background:#fff;box-shadow:0 24px 80px rgba(9,40,38,.28);font-family:inherit;animation:newRxAppear .22s ease-out}
+.new-rx-dialog::backdrop{background:rgba(11,38,39,.58);backdrop-filter:blur(3px);animation:newRxFade .2s ease-out}
+.new-rx-dialog-inner{padding:30px 26px 24px;text-align:center}
+.new-rx-icon{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:#fff1ed;color:#bb4432;font-size:28px;margin:0 auto 15px}
+.new-rx-dialog h2{font-size:23px;line-height:1.3;margin:0 0 10px;color:#183d39}
+.new-rx-dialog p{font-size:14px;line-height:1.65;margin:0 0 18px;color:#536c68}
+.new-rx-safe{display:flex;gap:9px;align-items:flex-start;text-align:left;background:#edf8f3;border-radius:12px;padding:13px;font-size:13px;line-height:1.5;color:#176451;margin-bottom:22px}
+.new-rx-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.new-rx-actions button{border:0;border-radius:11px;padding:13px 10px;font:600 13px inherit;cursor:pointer;min-height:45px}
+.new-rx-keep{background:#e9f1ee;color:#20564f}
+.new-rx-clear{background:#b83f35;color:#fff}
+.new-rx-actions button:focus-visible{outline:3px solid #15867d;outline-offset:3px}
+@keyframes newRxAppear{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes newRxFade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.new-rx-dialog,.new-rx-dialog::backdrop{animation:none}}
+@media print{.new-rx-dialog{display:none!important}}
+</style>
 </head>
 <body>
 <header class="workspace-header" aria-label="MediScript Pro navigation">
@@ -441,6 +459,18 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 </script>
 
 
+<dialog class="new-rx-dialog" id="newPrescriptionDialog" aria-labelledby="newRxTitle" aria-describedby="newRxDescription">
+  <div class="new-rx-dialog-inner">
+    <div class="new-rx-icon" aria-hidden="true">⚠</div>
+    <h2 id="newRxTitle">Are you sure?</h2>
+    <p id="newRxDescription">Do you want to start a new prescription? All current patient details, medicines, and clinical information will be lost.</p>
+    <div class="new-rx-safe"><span aria-hidden="true">✓</span><span>Your saved doctor profile will remain unchanged.</span></div>
+    <div class="new-rx-actions">
+      <button type="button" class="new-rx-keep" id="newRxKeep">Keep Editing</button>
+      <button type="button" class="new-rx-clear" id="newRxClear">Clear &amp; Start New</button>
+    </div>
+  </div>
+</dialog>
 <!-- ================= LEFT PANEL: INPUTS ================= -->
 <div class="form-panel">
 
@@ -885,7 +915,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
      Clear patient-specific fields, investigations and all medicine rows.
      No data is sent to storage by this action.
   */
-  function startNewPrescription() {
+  function startNewPrescription(confirmed = false) {
     const panel = document.querySelector('.form-panel');
     const profile = document.getElementById('doctor-profile-section');
     if (!panel || !profile) return;
@@ -908,7 +938,11 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
         })
       );
 
-    if (hasPatientData && !window.confirm('Start a new prescription? Unsaved patient details, medicines and investigations will be cleared. Your doctor profile will be kept.')) return;
+    if (hasPatientData && !confirmed) {
+      const dialog = document.getElementById('newPrescriptionDialog');
+      if (dialog && typeof dialog.showModal === 'function') { dialog.showModal(); return; }
+      if (!window.confirm('Are you sure? All current patient details, medicines and clinical information will be lost. Your saved doctor profile will remain unchanged.')) return;
+    }
 
     controls.forEach(el => {
       if (el.type === 'checkbox' || el.type === 'radio') {
@@ -944,6 +978,13 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     document.getElementById('pName')?.focus({preventScroll:true});
   }
   window.startNewPrescription = startNewPrescription;
+  const newRxDialog = document.getElementById('newPrescriptionDialog');
+  document.getElementById('newRxKeep').addEventListener('click', () => newRxDialog.close());
+  document.getElementById('newRxClear').addEventListener('click', () => {
+    newRxDialog.close();
+    startNewPrescription(true);
+  });
+
 
   function saveProfile() {
     if(typeof window.saveDoctorProfileToCloud!=='function'){
