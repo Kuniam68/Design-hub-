@@ -8,8 +8,50 @@
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
 import {getAuth,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import {getFirestore,doc,getDoc,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 import {firebaseConfig} from './firebase-config.js';
-const auth=getAuth(initializeApp(firebaseConfig));
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+const profileFields=['dName','dReg','dDegrees','dPhone','dEmail','cHospital','cLocation'];
+const profileStatus=()=>document.getElementById('profileSaveStatus');
+function showProfileStatus(message,isError=false){const el=profileStatus();if(el){el.textContent=message;el.style.color=isError?'#b91c1c':'#16685e';}}
+let profileLoadedFor=null;
+async function loadDoctorProfile(user){
+  const uid=user.uid;
+  profileLoadedFor=null;
+  profileFields.forEach(id=>{const input=document.getElementById(id);if(input)input.value='';});
+  if(typeof window.updatePreview==='function')window.updatePreview();
+  showProfileStatus('Loading your private profile…');
+  try{
+    const snapshot=await getDoc(doc(db,'doctors',uid));
+    if(auth.currentUser?.uid!==uid)return;
+    const data=snapshot.exists()?snapshot.data():{};
+    profileFields.forEach(id=>{const input=document.getElementById(id);if(input)input.value=typeof data[id]==='string'?data[id]:'';});
+    profileLoadedFor=uid;
+    if(typeof window.updatePreview==='function')window.updatePreview();
+    showProfileStatus(snapshot.exists()?'Profile loaded from your account.':'No saved profile yet. Enter your details and save.');
+  }catch(error){
+    console.error('Profile load failed:',error);
+    showProfileStatus('Could not load profile. Check your connection and Firestore access rules.',true);
+  }
+}
+window.saveDoctorProfileToCloud=async function(){
+  const user=auth.currentUser;
+  if(!user){showProfileStatus('Please sign in first.',true);return;}
+  if(profileLoadedFor!==user.uid){showProfileStatus('Profile has not loaded successfully. Please reload before saving.',true);return;}
+  const button=document.getElementById('profileSaveButton');
+  const data=Object.fromEntries(profileFields.map(id=>[id,document.getElementById(id)?.value.trim()||'']));
+  if(button)button.disabled=true;
+  showProfileStatus('Saving your profile securely…');
+  try{
+    await setDoc(doc(db,'doctors',user.uid),{...data,updatedAt:serverTimestamp()},{merge:true});
+    showProfileStatus('Profile saved to your account. It will load when you sign in again.');
+  }catch(error){
+    console.error('Profile save failed:',error);
+    showProfileStatus('Could not save. Check your connection and Firestore permissions.',true);
+  }finally{if(button)button.disabled=false;}
+};
 onAuthStateChanged(auth,user=>{
   if(!user){location.replace('./login.html');return;}
   const account=document.getElementById('accountName');
@@ -17,6 +59,7 @@ onAuthStateChanged(auth,user=>{
   const headerAccount=document.getElementById('workspaceHeaderUser');
   if(headerAccount) headerAccount.textContent=user.displayName||user.email||'Doctor account';
   document.getElementById('auth-visibility')?.remove();
+  loadDoctorProfile(user);
 },()=>{location.replace('./login.html')});
 window.mediScriptSignOut=async function(){
   const button=document.getElementById('signOutButton');
@@ -397,7 +440,7 @@ body{padding-top:var(--workspace-header-height)!important;height:100dvh!importan
   <div class="section-card" id="doctor-profile-section">
     <div class="section-title">
       Doctor & Chamber Profile
-      <button class="btn btn-sm" onclick="saveProfile()">💾 Save as Default</button>
+      <button class="btn btn-sm" id="profileSaveButton" onclick="saveProfile()">💾 Save My Profile</button>
     </div>
     <div class="row">
       <div class="form-group"><label>Doctor Name</label><input type="text" id="dName" placeholder="Dr. Name" oninput="updatePreview()"></div>
@@ -413,6 +456,8 @@ body{padding-top:var(--workspace-header-height)!important;height:100dvh!importan
       <div class="form-group"><label>Location</label><input type="text" id="cLocation" placeholder="Location" oninput="updatePreview()"></div>
     </div>
   </div>
+
+  <p id="profileSaveStatus" role="status" aria-live="polite" style="font-size:12px;margin:-8px 0 18px;color:#16685e;">Profile data is private to your signed-in account.</p>
 
   <!-- PATIENT SECTION -->
   <div class="section-card">
@@ -814,42 +859,20 @@ body{padding-top:var(--workspace-header-height)!important;height:100dvh!importan
 
 
   window.onload = function() {
-    try {
-      const saved = localStorage.getItem('mediScriptProfile');
-      if (saved) {
-        const data = JSON.parse(saved);
-        document.getElementById('dName').value = data.dName || '';
-        document.getElementById('dReg').value = data.dReg || '';
-        document.getElementById('dDegrees').value = data.dDegrees || '';
-        document.getElementById('dPhone').value = data.dPhone || '';
-        document.getElementById('dEmail').value = data.dEmail || '';
-        document.getElementById('cHospital').value = data.cHospital || '';
-        document.getElementById('cLocation').value = data.cLocation || '';
-      }
-    } catch (e) {}
     addMedicine();
     updatePreview();
   };
 
   function saveProfile() {
-    const data = {
-      dName: document.getElementById('dName').value,
-      dReg: document.getElementById('dReg').value,
-      dDegrees: document.getElementById('dDegrees').value,
-      dPhone: document.getElementById('dPhone').value,
-      dEmail: document.getElementById('dEmail').value,
-      cHospital: document.getElementById('cHospital').value,
-      cLocation: document.getElementById('cLocation').value,
-    };
-    try {
-      localStorage.setItem('mediScriptProfile', JSON.stringify(data));
-      alert('Profile saved successfully! It will auto-load next time.');
-    } catch (e) {
-      alert('Could not save profile in this browser.');
+    if(typeof window.saveDoctorProfileToCloud!=='function'){
+      const el=document.getElementById('profileSaveStatus');
+      if(el)el.textContent='Profile service is loading. Please try again.';
+      return;
     }
+    window.saveDoctorProfileToCloud();
   }
 
-  function toggleSystem(sys, isChecked) {
+    function toggleSystem(sys, isChecked) {
     document.getElementById(`sub-${sys}`).style.display = isChecked ? 'block' : 'none';
   }
 
