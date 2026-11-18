@@ -2356,7 +2356,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 /* ===== PRESCRIPTION HISTORY: opt-in saves only, never automatic ===== */
 (function(){
  const dialog=document.getElementById('historyDialog'),list=document.getElementById('historyList'),status=document.getElementById('historyStatus'),search=document.getElementById('historySearch');
- let records=[],busy=false;
+ let records=[],busy=false,loadFailed=false;
  const filter=document.getElementById("historyFilter");
  let captureInFlight=null;
  const notify=(message,error=false)=>{status.textContent=message;status.style.color=error?'#b91c1c':'#256d60';};
@@ -2407,7 +2407,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    list.replaceChildren();document.getElementById('historyTotal').textContent=records.length+(records.length===100?'+':'')+' saved records';
    const term=search.value.trim().toLocaleLowerCase();
    const found=records.filter(r=>(filter.value==='all'||(filter.value==='favorite'&&r.favorite)||(filter.value==='saved'&&r.saved)||(filter.value==='temporary'&&!r.saved&&!r.favorite))&&[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
-   if(!found.length){const empty=el('div','history-empty');empty.append(el('span','','🗂️'),el('strong','',term?'No matching prescriptions':'No prescriptions saved yet'),el('p','',term?'Try a different patient name, phone or diagnosis.':'Download or print a prescription to add it here automatically.'));list.append(empty);return;}
+   if(!found.length){const empty=el('div','history-empty');empty.append(el('span','',loadFailed?'⚠️':'🗂️'),el('strong','',loadFailed?'History unavailable':term?'No matching prescriptions':'No prescriptions in history yet'),el('p','',loadFailed?'The app could not retrieve your records. Please check Firebase permissions and try Refresh.':term?'Try a different patient name, phone or diagnosis.':'Download or print a prescription to add it here automatically.'));list.append(empty);return;}
    found.forEach(r=>{
      const card=el('article','history-record'),top=el('div','history-record-top'),icon=el('div','history-record-icon','▤'),main=el('div','history-record-main');
      main.append(el('strong','',r.patientName||'Unnamed patient'));
@@ -2453,8 +2453,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  }
  async function refresh(){
    if(busy)return;busy=true;notify('Loading prescription history…');list.replaceChildren(el('div','history-empty','Loading records…'));
-   try{records=await window.historyCloud.list();notify(records.length?'Your prescription history is ready.':'No prescriptions in history yet.');}
-   catch(error){records=[];notify('Could not access saved records. Your Firebase permissions or connection may need attention.',true);console.error('History load failed',error);}
+   try{records=await window.historyCloud.list();loadFailed=false;notify(records.length?'Your prescription history is ready.':'No prescriptions in history yet.');}
+   catch(error){records=[];loadFailed=true;notify(error?.code==='permission-denied'?'Firebase denied access to prescription records. The Firestore security rules must be updated securely.':'Could not access prescription history. Please check your connection and Firebase permissions.',true);console.error('History load failed',error);}
    finally{busy=false;render();}
  }
  window.capturePrescriptionToHistory=async()=>{
@@ -2463,7 +2463,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    if(captureInFlight)return captureInFlight;
    captureInFlight=window.historyCloud.capture(record).catch(error=>{
      console.error('Automatic prescription history capture failed:',error);
-     window.dispatchEvent(new CustomEvent('mediscript-history-error',{detail:'Prescription was exported but history could not be updated. Check Firebase permissions and your connection.'}));
+     window.dispatchEvent(new CustomEvent('mediscript-history-error',{detail:error?.code==='permission-denied'?'PDF downloaded, but Firebase denied access to History. Firestore security rules need updating.':'PDF downloaded, but History could not be updated. Check Firebase permissions and your connection.'}));
    }).finally(()=>{captureInFlight=null;});
    return captureInFlight;
  };
