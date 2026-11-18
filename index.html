@@ -393,6 +393,21 @@ body{padding-top:var(--workspace-header-height);height:100vh;box-sizing:border-b
   .workspace-header,.workspace-drawer,.workspace-backdrop{display:none!important}
   body{padding-top:0!important}
 }
+/* Independent in-form preview on narrow screens; the printable A4 panel remains untouched. */
+.mobile-prescription-preview{display:none}
+@media screen and (max-width:1199px){
+  body{display:block!important;height:auto!important;min-height:100dvh!important;overflow-x:hidden!important;overflow-y:auto!important}
+  body>.form-panel{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;position:relative!important;z-index:auto!important}
+  body>#previewPanel{display:none!important}
+  .mobile-prescription-preview{display:block!important;position:relative!important;clear:both!important;width:100%!important;max-width:100%!important;overflow:hidden!important;padding:18px 4px 24px;margin-top:0;background:#e2e8f0;border-radius:12px}
+  .mobile-preview-heading{font:700 16px 'Poppins',sans-serif;color:#0f766e;text-align:center;margin:0 0 16px}
+  .mobile-preview-pages{width:100%;max-width:100%;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .mobile-preview-pages>.page-scaler{flex:none!important;margin:0!important;text-align:left}
+}
+@media print{
+  .mobile-prescription-preview{display:none!important}
+  body>#previewPanel{display:block!important}
+}
 </style>
 </head>
 <body>
@@ -776,6 +791,11 @@ body{padding-top:var(--workspace-header-height);height:100vh;box-sizing:border-b
       🖨️ Print A4
     </button>
   </div>
+  <!-- Mobile/tablet preview lives inside the form's document flow, directly after the action buttons. -->
+  <section class="mobile-prescription-preview" id="mobilePreviewSection" aria-label="Live prescription preview">
+    <h2 class="mobile-preview-heading">Prescription Preview</h2>
+    <div class="mobile-preview-pages" id="mobilePreviewPanel"></div>
+  </section>
 </div>
 
 <!-- ================= RIGHT PANEL: LIVE PREVIEW ================= -->
@@ -1408,13 +1428,17 @@ body{padding-top:var(--workspace-header-height);height:100vh;box-sizing:border-b
     } else {
       previewPanel.innerHTML = wrap(buildPage1(careRows.concat(drugRows.slice(0, MAX_MEDS_PAGE1)), true)) + wrap(buildPage2(drugRows.slice(MAX_MEDS_PAGE1)));
     }
+    // Keep a separate on-screen copy inside the form on narrow screens.
+    // The original #previewPanel stays intact for A4 printing and PDF generation.
+    const mobilePanel = document.getElementById('mobilePreviewPanel');
+    if (mobilePanel) mobilePanel.innerHTML = previewPanel.innerHTML;
     autoFit();
     fitPreview();
   }
 
   /* Shrink spacing step by step until page content fits its A4 page */
   function autoFit() {
-    document.querySelectorAll('#previewPanel .a4-paper').forEach(paper => {
+    document.querySelectorAll('#previewPanel .a4-paper, #mobilePreviewPanel .a4-paper').forEach(paper => {
       const cols = Array.from(paper.querySelectorAll('.right-col, .page2-right, .left-col'));
       for (let lvl = 0; lvl <= 4; lvl++) {
         paper.dataset.density = lvl;
@@ -1426,13 +1450,20 @@ body{padding-top:var(--workspace-header-height);height:100vh;box-sizing:border-b
 
   /* Scale pages to fit the preview panel (preview only; export uses a clean full-size clone) */
   function fitPreview() {
-    const panel = document.getElementById('previewPanel');
-    const avail = panel.clientWidth - 40;
-    const scale = Math.min(1, Math.max(0.3, avail / 794));
-    panel.querySelectorAll('.page-scaler').forEach(w => {
-      w.style.width = (794 * scale) + 'px';
-      w.style.height = (1123 * scale) + 'px';
-      w.firstElementChild.style.transform = `scale(${scale})`;
+    // Fit each preview independently to its actual available width.
+    // Never modify A4 paper dimensions or the PDF export algorithm.
+    ['previewPanel','mobilePreviewPanel'].forEach(id => {
+      const panel = document.getElementById(id);
+      if (!panel) return;
+      const width = panel.getBoundingClientRect().width || panel.clientWidth;
+      if (width <= 0) return;
+      const available = Math.max(1, width - (id === 'mobilePreviewPanel' ? 4 : 40));
+      const scale = Math.min(1, available / 794);
+      panel.querySelectorAll('.page-scaler').forEach(w => {
+        w.style.width = (794 * scale) + 'px';
+        w.style.height = (1123 * scale) + 'px';
+        if (w.firstElementChild) w.firstElementChild.style.transform = 'scale(' + scale + ')';
+      });
     });
   }
   window.addEventListener('resize', fitPreview);
