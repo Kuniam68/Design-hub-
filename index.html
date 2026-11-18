@@ -2303,6 +2303,106 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
       btn.disabled = false;
     }
   }
+
+/* ===== PRESCRIPTION HISTORY: opt-in saves only, never automatic ===== */
+(function(){
+ const dialog=document.getElementById('historyDialog'),list=document.getElementById('historyList'),status=document.getElementById('historyStatus'),search=document.getElementById('historySearch');
+ let records=[],busy=false;
+ const notify=(message,error=false)=>{status.textContent=message;status.style.color=error?'#b91c1c':'#256d60';};
+ const controlValue=el=>el.type==='checkbox'||el.type==='radio'?el.checked:el.value;
+ const applyValue=(el,value)=>{if(el.type==='checkbox'||el.type==='radio')el.checked=Boolean(value);else el.value=String(value??'');};
+ const mainControls=()=>Array.from(document.querySelectorAll('.form-panel input[id],.form-panel select[id],.form-panel textarea[id]')).filter(el=>!el.closest('#doctor-profile-section')&&!el.closest('#med-container')&&el.type!=='hidden'&&el.type!=='file');
+ const medRows=()=>Array.from(document.querySelectorAll('#med-container .med-item'));
+ function capture(){
+   const fields={};
+   mainControls().forEach(el=>fields[el.id]=controlValue(el));
+   const medicines=medRows().map(row=>Array.from(row.querySelectorAll('input,select,textarea')).map(controlValue));
+   return {version:1,patientName:String(document.getElementById('pName').value||'').trim().slice(0,160),
+     patientPhone:String(document.getElementById('pPhone').value||'').trim().slice(0,80),
+     patientAge:String(document.getElementById('pAge').value||'').trim().slice(0,40),
+     diagnosis:String(document.getElementById('dDiagnosis')?.value||document.getElementById('cDiagnosis')?.value||'').trim().slice(0,400),
+     workplace:String(document.getElementById('cHospital')?.value||'').trim().slice(0,150),
+     fields,medicines,investigations:selectedInvestigations.slice(0,100)};
+ }
+ function hasUnsavedWork(){
+   return mainControls().some(el=>{const val=controlValue(el);return el.type==='checkbox'?val:el.tagName==='SELECT'?val!==(el.options[0]?.value||''):String(val||'').trim()!=='';})||
+     selectedInvestigations.length>0||medRows().some(row=>Array.from(row.querySelectorAll('input,textarea')).some(el=>el.value.trim()));
+ }
+ function restore(record){
+   if(!record||record.version!==1||!record.fields||!Array.isArray(record.medicines))throw Error('Unsupported prescription format.');
+   mainControls().forEach(el=>{if(Object.prototype.hasOwnProperty.call(record.fields,el.id))applyValue(el,record.fields[el.id]);});
+   const container=document.getElementById('med-container');container.replaceChildren();medCount=0;
+   const rows=record.medicines.slice(0,100);
+   rows.forEach(values=>{
+     addMedicine();
+     const controls=Array.from(container.lastElementChild.querySelectorAll('input,select,textarea'));
+     controls.forEach((el,i)=>{if(i<values.length)applyValue(el,values[i]);});
+     const form=container.lastElementChild.querySelector('.m-form');
+     if(form)toggleFormMode(form);
+     controls.filter(el=>el.tagName==='SELECT').forEach(el=>{if(el.classList.contains('m-unit')||el.classList.contains('i-unit'))toggleCustom(el);});
+   });
+   if(!rows.length)addMedicine();
+   selectedInvestigations=Array.isArray(record.investigations)?record.investigations.filter(x=>typeof x==='string').slice(0,100):[];
+   renderInvTags();
+   document.querySelectorAll('[id^="sub-"]').forEach(box=>box.style.display='none');
+   document.querySelectorAll('.form-panel input[type="checkbox"][onchange],.form-panel select[onchange]').forEach(el=>{
+     if(!el.closest('#doctor-profile-section')&&!el.closest('#med-container'))el.dispatchEvent(new Event('change',{bubbles:false}));
+   });
+   toggleDietOthers();toggleReferral();toggleMurmur();updatePreview();
+ }
+ function el(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
+ function button(text,cls,fn){const node=el('button',cls,text);node.type='button';node.disabled=busy;node.addEventListener('click',fn);return node;}
+ function render(){
+   list.replaceChildren();document.getElementById('historyTotal').textContent=records.length+(records.length===100?'+':'')+' saved records';
+   const term=search.value.trim().toLocaleLowerCase();
+   const found=records.filter(r=>[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
+   if(!found.length){const empty=el('div','history-empty');empty.append(el('span','','🗂️'),el('strong','',term?'No matching prescriptions':'Your prescription archive starts here'),el('p','',term?'Try a different patient name, phone or diagnosis.':'Save a completed prescription to keep a private record you can reopen later. Nothing is saved automatically.'));list.append(empty);return;}
+   found.forEach(r=>{
+     const card=el('article','history-record'),top=el('div','history-record-top'),icon=el('div','history-record-icon','▤'),main=el('div','history-record-main');
+     main.append(el('strong','',r.patientName||'Unnamed patient'));
+     const date=r.createdAt?.toDate?.();
+     main.append(el('small','',[(date instanceof Date&&!isNaN(date)?date.toLocaleString():'Date unavailable'),r.patientAge?'Age '+r.patientAge:'',r.workplace].filter(Boolean).join(' · ')));
+     top.append(icon,main);card.append(top);
+     if(r.diagnosis)card.append(el('p','history-record-diagnosis',r.diagnosis.slice(0,240)));
+     const actions=el('div','history-record-buttons');
+     actions.append(button('↗ Open prescription','history-open',()=>{
+       if(hasUnsavedWork()&&!confirm('Open this saved prescription? Current unsaved patient information will be replaced. Your doctor profile stays unchanged.'))return;
+       try{restore(r);dialog.close();document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});}
+       catch(error){notify('Unable to open this record. '+error.message,true);}
+     }));
+     actions.append(button('Delete','history-delete',async()=>{
+       if(!confirm('Permanently delete the saved prescription for '+(r.patientName||'this patient')+'? This cannot be undone.'))return;
+       if(busy)return;busy=true;render();notify('Deleting record…');
+       try{await window.historyCloud.remove(r.id);records=records.filter(x=>x.id!==r.id);notify('Prescription deleted.');}
+       catch(error){notify('Delete failed. Please check your Firestore access rules and connection.',true);}
+       finally{busy=false;render();}
+     }));
+     card.append(actions);list.append(card);
+   });
+ }
+ async function refresh(){
+   if(busy)return;busy=true;notify('Loading saved prescriptions…');list.replaceChildren(el('div','history-empty','Loading records…'));
+   try{records=await window.historyCloud.list();notify(records.length?'Your latest saved prescriptions are ready.':'No prescriptions saved yet.');}
+   catch(error){records=[];notify('Unable to load history. Check Firestore rules and your connection. No patient data has been changed.',true);console.error('History load failed',error);}
+   finally{busy=false;render();}
+ }
+ document.getElementById('historySaveCurrent').addEventListener('click',async()=>{
+   if(busy)return;
+   const record=capture();
+   if(!record.patientName){notify('Enter a patient name before saving this prescription.',true);return;}
+   if(!confirm('Save this prescription for '+record.patientName+' to your private account history? This will store patient clinical details in Firebase.'))return;
+   busy=true;document.getElementById('historySaveCurrent').disabled=true;notify('Saving prescription…');
+   try{await window.historyCloud.save(record);notify('Prescription saved successfully.');}
+   catch(error){notify('Save failed. Check Firestore permissions and connection. The prescription remains in the editor.',true);console.error('History save failed',error);}
+   finally{busy=false;document.getElementById('historySaveCurrent').disabled=false;await refresh();}
+ });
+ document.getElementById('historyRefresh').addEventListener('click',refresh);
+ document.getElementById('historyClose').addEventListener('click',()=>dialog.close());
+ document.getElementById('historyDone').addEventListener('click',()=>dialog.close());
+ search.addEventListener('input',render);
+ window.openPrescriptionHistory=()=>{dialog.showModal();search.value='';refresh();};
+})();
+
 </script>
 </body>
 </html>
