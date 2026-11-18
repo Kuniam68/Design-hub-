@@ -400,21 +400,35 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 }
 </style>
 <style id="new-prescription-dialog-styles">
-.new-rx-dialog{border:0;border-radius:20px;padding:0;width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;color:#183d39;background:#fff;box-shadow:0 24px 80px rgba(9,40,38,.28);font-family:inherit;animation:newRxAppear .22s ease-out}
-.new-rx-dialog::backdrop{background:rgba(11,38,39,.58);backdrop-filter:blur(3px);animation:newRxFade .2s ease-out}
-.new-rx-dialog-inner{padding:30px 26px 24px;text-align:center}
-.new-rx-icon{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:#fff1ed;color:#bb4432;font-size:28px;margin:0 auto 15px}
-.new-rx-dialog h2{font-size:23px;line-height:1.3;margin:0 0 10px;color:#183d39}
-.new-rx-dialog p{font-size:14px;line-height:1.65;margin:0 0 18px;color:#536c68}
-.new-rx-safe{display:flex;gap:9px;align-items:flex-start;text-align:left;background:#edf8f3;border-radius:12px;padding:13px;font-size:13px;line-height:1.5;color:#176451;margin-bottom:22px}
-.new-rx-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.new-rx-actions button{border:0;border-radius:11px;padding:13px 10px;font:600 13px inherit;cursor:pointer;min-height:45px}
-.new-rx-keep{background:#e9f1ee;color:#20564f}
-.new-rx-clear{background:#b83f35;color:#fff}
+/* Premium V2: all animation is decorative; native dialog owns focus and dismissal. */
+.new-rx-dialog{border:1px solid rgba(255,255,255,.7);border-radius:26px;padding:0;width:min(460px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;margin:auto;color:#183d39;background:linear-gradient(160deg,#fff 0%,#f8fcfb 100%);box-shadow:0 32px 100px rgba(5,38,36,.32),0 2px 14px rgba(5,38,36,.1);font-family:inherit;animation:newRxSpring .48s cubic-bezier(.2,1.2,.35,1) both}
+.new-rx-dialog::backdrop{background:rgba(8,36,36,.62);backdrop-filter:blur(7px);animation:newRxFade .28s ease both}
+.new-rx-dialog-inner{position:relative;padding:34px 28px 26px;text-align:center;overflow:hidden}
+.new-rx-dialog-inner:before{content:"";position:absolute;inset:0 0 auto;height:6px;background:linear-gradient(90deg,#12877c,#69b9a7,#d78c6b)}
+.new-rx-icon-wrap{position:relative;width:92px;height:92px;margin:2px auto 19px;display:grid;place-items:center}
+.new-rx-halo{position:absolute;inset:0;border-radius:50%;background:rgba(207,91,65,.09);animation:newRxPulse 2.8s ease-in-out infinite}
+.new-rx-icon{position:relative;display:grid;place-items:center;width:68px;height:68px;border-radius:23px;background:linear-gradient(145deg,#fff0e8,#ffe1d5);color:#b54835;box-shadow:0 10px 26px rgba(185,74,53,.12);animation:newRxIcon .5s .12s cubic-bezier(.2,1.5,.3,1) both}
+.new-rx-icon svg{width:33px;height:33px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.new-rx-eyebrow{font-size:10px;font-weight:800;letter-spacing:2.3px;color:#b45c47;margin:0 0 7px;text-transform:uppercase}
+.new-rx-dialog h2{font-size:clamp(23px,5vw,27px);line-height:1.3;margin:0 0 10px;color:#183d39;letter-spacing:-.5px}
+.new-rx-dialog p{font-size:14px;line-height:1.75;margin:0 0 20px;color:#536c68}
+.new-rx-safe{display:flex;gap:12px;align-items:center;text-align:left;background:#eaf7f1;border:1px solid #d2ece0;border-radius:15px;padding:14px;font-size:13px;line-height:1.55;color:#176451;margin-bottom:24px}
+.new-rx-safe-icon{flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#cceadd;font-weight:800;font-size:17px}
+.new-rx-actions{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.new-rx-actions button{border:0;border-radius:13px;padding:14px 9px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;min-height:50px;transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+.new-rx-actions button:active{transform:scale(.96)}
+.new-rx-keep{background:#e8f0ed;color:#20564f}
+.new-rx-keep:hover{background:#d9eae3}
+.new-rx-clear{background:linear-gradient(135deg,#bb493b,#a93831);color:#fff;box-shadow:0 8px 18px rgba(174,62,48,.19)}
+.new-rx-clear:hover{box-shadow:0 10px 24px rgba(174,62,48,.28)}
 .new-rx-actions button:focus-visible{outline:3px solid #15867d;outline-offset:3px}
-@keyframes newRxAppear{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.new-rx-footnote{font-size:11px;color:#80938f;margin-top:17px}
+@keyframes newRxSpring{from{opacity:0;transform:translateY(24px) scale(.91)}70%{opacity:1;transform:translateY(-4px) scale(1.012)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes newRxIcon{from{opacity:0;transform:rotate(-16deg) scale(.72)}to{opacity:1;transform:rotate(0) scale(1)}}
+@keyframes newRxPulse{0%,100%{transform:scale(.93);opacity:.55}50%{transform:scale(1.09);opacity:1}}
 @keyframes newRxFade{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){.new-rx-dialog,.new-rx-dialog::backdrop{animation:none}}
+@media(max-width:420px){.new-rx-dialog-inner{padding:29px 19px 22px}.new-rx-actions{gap:8px}.new-rx-actions button{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.new-rx-dialog,.new-rx-dialog::backdrop,.new-rx-icon,.new-rx-halo{animation:none}.new-rx-actions button{transition:none}}
 @media print{.new-rx-dialog{display:none!important}}
 </style>
 </head>
@@ -461,14 +475,19 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 
 <dialog class="new-rx-dialog" id="newPrescriptionDialog" aria-labelledby="newRxTitle" aria-describedby="newRxDescription">
   <div class="new-rx-dialog-inner">
-    <div class="new-rx-icon" aria-hidden="true">⚠</div>
+    <div class="new-rx-icon-wrap" aria-hidden="true">
+      <span class="new-rx-halo"></span>
+      <span class="new-rx-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.8 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+    </div>
+    <div class="new-rx-eyebrow">New prescription</div>
     <h2 id="newRxTitle">Are you sure?</h2>
     <p id="newRxDescription">Do you want to start a new prescription? All current patient details, medicines, and clinical information will be lost.</p>
-    <div class="new-rx-safe"><span aria-hidden="true">✓</span><span>Your saved doctor profile will remain unchanged.</span></div>
+    <div class="new-rx-safe"><span class="new-rx-safe-icon" aria-hidden="true">✓</span><span>Your saved doctor profile will remain unchanged.</span></div>
     <div class="new-rx-actions">
       <button type="button" class="new-rx-keep" id="newRxKeep">Keep Editing</button>
       <button type="button" class="new-rx-clear" id="newRxClear">Clear &amp; Start New</button>
     </div>
+    <div class="new-rx-footnote">Your prescription is only cleared if you confirm.</div>
   </div>
 </dialog>
 <!-- ================= LEFT PANEL: INPUTS ================= -->
