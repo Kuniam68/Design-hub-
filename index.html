@@ -485,6 +485,42 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 @media(max-width:540px){.my-profile-head{padding:24px 20px 55px}.my-profile-head h2{font-size:26px}.my-profile-body{padding:0 15px 18px}.my-profile-identity{padding:14px;gap:10px}.my-profile-avatar{width:52px;height:52px;font-size:24px}.my-profile-identity strong{font-size:14px}.my-profile-idtag{font-size:9px;padding:6px}.my-profile-tab{font-size:10px;padding:12px 3px}.my-profile-section{padding:16px}.my-profile-actions{bottom:-18px}}
 @media(prefers-reduced-motion:reduce){.my-profile-dialog{animation:none}.my-profile-tab{transition:none}}
 </style>
+<style id="my-profile-v3-styles">
+/* V3: medical portfolio layout; keeps existing data fields and save behavior. */
+.my-profile-dialog{width:min(850px,calc(100vw - 24px));background:#f8faf9;border-radius:19px;box-shadow:0 32px 110px #102c3159;animation:profileV3Enter .27s ease-out}
+.my-profile-head{background:#fff;color:#193b39;border-bottom:1px solid #e1eae7;padding:24px 30px 20px}
+.my-profile-head:after{display:none}
+.my-profile-head small{color:#0d8877;font-weight:800;letter-spacing:1.4px}
+.my-profile-head h2{color:#153e3a;font-size:26px;letter-spacing:-.5px}
+.my-profile-head p{color:#65807b;opacity:1}
+.my-profile-close{background:#edf4f1;color:#355e58;border:0}
+.my-profile-body{padding:23px 26px 26px}
+.my-profile-identity{margin:0 0 18px;padding:20px 22px;border:0;border-radius:17px;background:linear-gradient(112deg,#103d47,#0f6c6b 75%,#158578);color:#fff;box-shadow:0 9px 26px #0d6a6526}
+.my-profile-avatar{width:72px;height:72px;border-radius:50%;border:2px solid #ffffff75;background:#ffffff2a;color:white;box-shadow:none}
+.my-profile-identity strong{color:#fff;font-size:19px}
+.my-profile-identity span{color:#c8eae5}
+.my-profile-idtag{background:#ffffff21;color:#d5f5e9;border:1px solid #ffffff30}
+.my-profile-account-card{display:flex;align-items:flex-start;gap:12px;background:#eef5f3;border:1px solid #dbe9e4;border-radius:14px;padding:13px 15px;margin-bottom:21px}
+.my-profile-account-icon{width:35px;height:35px;display:grid;place-items:center;flex:none;background:#d8e9e3;border-radius:11px;color:#23675b;font-size:18px}
+.my-profile-account-copy{min-width:0;flex:1}
+.my-profile-account-copy strong{font-size:12px;color:#23594f;display:block;margin-bottom:3px}
+.my-profile-account-copy span{font-size:12px;color:#3f6761;overflow-wrap:anywhere;display:block}
+.my-profile-account-copy small{display:block;font-size:11px;color:#66817a;line-height:1.55;margin-top:5px}
+.my-profile-layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:20px;align-items:start}
+.my-profile-tabs{display:flex;flex-direction:column;gap:6px;padding:8px;background:#edf3f1;border-radius:14px;margin:0;position:sticky;top:0}
+.my-profile-tab{flex:none;width:100%;text-align:left;padding:14px 13px;border-radius:10px;font-size:12px}
+.my-profile-tab[aria-selected="true"]{background:#fff;color:#086b5f;box-shadow:0 2px 10px #1e575314}
+.my-profile-editor{min-width:0}
+.my-profile-section{border:1px solid #e0ebe7;border-radius:14px;padding:20px;background:#fff;margin:0 0 14px;min-height:210px}
+.my-profile-section legend{font-size:14px;color:#155e56}
+.my-profile-field input,.my-profile-field textarea{background:#fff}
+.my-profile-actions{position:static;bottom:auto;background:transparent;padding:17px 0 0}
+.my-profile-save{background:#0b746a}
+.my-profile-section[hidden]{display:none!important}
+@keyframes profileV3Enter{from{opacity:0;transform:translateY(15px) scale(.985)}to{opacity:1;transform:none}}
+@media(max-width:640px){.my-profile-head{padding:21px 18px}.my-profile-body{padding:16px}.my-profile-identity{padding:16px}.my-profile-avatar{width:56px;height:56px;font-size:24px}.my-profile-idtag{display:none}.my-profile-layout{display:block}.my-profile-tabs{flex-direction:row;position:static;margin-bottom:14px;padding:5px}.my-profile-tab{text-align:center;flex:1;font-size:10px;padding:12px 3px}.my-profile-section{padding:16px;min-height:0}}
+@media(prefers-reduced-motion:reduce){.my-profile-dialog{animation:none}}
+</style>
 </head>
 <body>
 <header class="workspace-header" aria-label="MediScript Pro navigation">
@@ -549,14 +585,23 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <div class="my-profile-body">
     <div class="my-profile-identity">
       <div class="my-profile-avatar" id="myProfileAvatar" aria-hidden="true">✚</div>
-      <div><strong id="myProfileDisplayName">Doctor profile</strong><span id="myProfileAccount">Signed-in account</span></div><span class="my-profile-idtag">● VERIFIED SESSION</span>
+      <div><strong id="myProfileDisplayName">Doctor profile</strong><span>Professional prescription identity</span></div><span class="my-profile-idtag">● SIGNED IN</span>
+    </div>
+    <div class="my-profile-account-card" aria-label="Login account information">
+      <div class="my-profile-account-icon" aria-hidden="true">🔒</div>
+      <div class="my-profile-account-copy">
+        <strong>Account email · Sign-in only</strong>
+        <span id="myProfileAccount">Signed-in account</span>
+        <small>This is your Firebase login email. It is read-only here and does not automatically appear on prescriptions. The separate professional email below is optional and can be different.</small>
+      </div>
     </div>
     <form id="myProfileForm">
-      <div class="my-profile-tabs" role="tablist" aria-label="Profile sections">
+      <div class="my-profile-layout"><div class="my-profile-tabs" role="tablist" aria-label="Profile sections">
         <button type="button" class="my-profile-tab" id="mpTabIdentity" role="tab" aria-selected="true" aria-controls="mpSectionIdentity" data-profile-tab="identity">✚ Identity</button>
         <button type="button" class="my-profile-tab" id="mpTabContact" role="tab" aria-selected="false" aria-controls="mpSectionContact" data-profile-tab="contact" tabindex="-1">☎ Contact</button>
         <button type="button" class="my-profile-tab" id="mpTabChamber" role="tab" aria-selected="false" aria-controls="mpSectionChamber" data-profile-tab="chamber" tabindex="-1">⌂ Chamber</button>
       </div>
+      <div class="my-profile-editor">
       <fieldset class="my-profile-section" id="mpSectionIdentity" role="tabpanel" aria-labelledby="mpTabIdentity">
         <legend>01 · Professional identity</legend>
         <div class="my-profile-grid">
@@ -569,7 +614,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
         <legend>02 · Contact details</legend>
         <div class="my-profile-grid">
           <div class="my-profile-field"><label for="mp-dPhone">Professional phone</label><input id="mp-dPhone" name="dPhone" type="tel" maxlength="60" autocomplete="tel" placeholder="Phone number"></div>
-          <div class="my-profile-field"><label for="mp-dEmail">Professional email</label><input id="mp-dEmail" name="dEmail" type="email" maxlength="254" autocomplete="email" placeholder="doctor@example.com"></div>
+          <div class="my-profile-field"><label for="mp-dEmail">Professional email (prescription contact)</label><input id="mp-dEmail" name="dEmail" type="email" maxlength="254" autocomplete="email" placeholder="doctor@example.com"></div>
         </div>
       </fieldset>
       <fieldset class="my-profile-section" id="mpSectionChamber" role="tabpanel" aria-labelledby="mpTabChamber" hidden>
@@ -579,6 +624,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
           <div class="my-profile-field"><label for="mp-cLocation">Location / address</label><input id="mp-cLocation" name="cLocation" maxlength="300" placeholder="Location or address"></div>
         </div>
       </fieldset>
+      </div></div>
       <p class="my-profile-status" id="myProfileStatus" role="status" aria-live="polite">Your profile is private to your signed-in account.</p>
       <div class="my-profile-actions"><button type="button" class="my-profile-cancel" id="myProfileCancel">Cancel</button><button type="submit" class="my-profile-save" id="myProfileSave">Save Profile</button></div>
     </form>
