@@ -2311,26 +2311,26 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  const notify=(message,error=false)=>{status.textContent=message;status.style.color=error?'#b91c1c':'#256d60';};
  const controlValue=el=>el.type==='checkbox'||el.type==='radio'?el.checked:el.value;
  const applyValue=(el,value)=>{if(el.type==='checkbox'||el.type==='radio')el.checked=Boolean(value);else el.value=String(value??'');};
- const mainControls=()=>Array.from(document.querySelectorAll('.form-panel input[id],.form-panel select[id],.form-panel textarea[id]')).filter(el=>!el.closest('#doctor-profile-section')&&!el.closest('#med-container')&&el.type!=='hidden'&&el.type!=='file');
+ const mainControls=()=>Array.from(document.querySelectorAll('.form-panel input,.form-panel select,.form-panel textarea')).filter(el=>!el.closest('#doctor-profile-section')&&!el.closest('#med-container')&&el.type!=='hidden'&&el.type!=='file');
  const medRows=()=>Array.from(document.querySelectorAll('#med-container .med-item'));
  function capture(){
    const fields={};
-   mainControls().forEach(el=>fields[el.id]=controlValue(el));
+   mainControls().forEach((el,i)=>fields[String(i)]=controlValue(el));
    const medicines=medRows().map(row=>Array.from(row.querySelectorAll('input,select,textarea')).map(controlValue));
    return {version:1,patientName:String(document.getElementById('pName').value||'').trim().slice(0,160),
      patientPhone:String(document.getElementById('pPhone').value||'').trim().slice(0,80),
      patientAge:String(document.getElementById('pAge').value||'').trim().slice(0,40),
-     diagnosis:String(document.getElementById('dDiagnosis')?.value||document.getElementById('cDiagnosis')?.value||'').trim().slice(0,400),
+     diagnosis:String(document.getElementById('provDx')?.value||'').trim().slice(0,400),
      workplace:String(document.getElementById('cHospital')?.value||'').trim().slice(0,150),
      fields,medicines,investigations:selectedInvestigations.slice(0,100)};
  }
  function hasUnsavedWork(){
-   return mainControls().some(el=>{const val=controlValue(el);return el.type==='checkbox'?val:el.tagName==='SELECT'?val!==(el.options[0]?.value||''):String(val||'').trim()!=='';})||
+   return mainControls().some(el=>{const val=controlValue(el);return el.type==='checkbox'?val!==el.defaultChecked:el.tagName==='SELECT'?val!==(el.options[0]?.value||''):String(val||'').trim()!=='';})||
      selectedInvestigations.length>0||medRows().some(row=>Array.from(row.querySelectorAll('input,textarea')).some(el=>el.value.trim()));
  }
  function restore(record){
    if(!record||record.version!==1||!record.fields||!Array.isArray(record.medicines))throw Error('Unsupported prescription format.');
-   mainControls().forEach(el=>{if(Object.prototype.hasOwnProperty.call(record.fields,el.id))applyValue(el,record.fields[el.id]);});
+   mainControls().forEach((el,i)=>{if(Object.prototype.hasOwnProperty.call(record.fields,String(i)))applyValue(el,record.fields[String(i)]);});
    const container=document.getElementById('med-container');container.replaceChildren();medCount=0;
    const rows=record.medicines.slice(0,100);
    rows.forEach(values=>{
