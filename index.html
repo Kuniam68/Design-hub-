@@ -101,7 +101,12 @@ window.historyCloud={
   const user=auth.currentUser;
   if(!user||profileLoadedFor!==user.uid)throw Error('Sign in and wait for your profile to load.');
   const snapshot=await getDocs(query(collection(db,'doctors',user.uid,'prescriptions'),orderBy('createdAt','desc'),limit(100)));
-  return snapshot.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.saved||x.favorite||!x.expiresAt||x.expiresAt.toMillis()>Date.now());
+  const rows=snapshot.docs.map(d=>({id:d.id,...d.data()}));
+  const expired=rows.filter(x=>!x.saved&&!x.favorite&&x.expiresAt&&x.expiresAt.toMillis()<=Date.now());
+  // Best-effort deletion when History opens. Enable Firestore TTL on expiresAt
+  // for server-side deletion even if no doctor opens the app.
+  if(expired.length)await Promise.allSettled(expired.map(x=>deleteDoc(doc(db,'doctors',user.uid,'prescriptions',x.id))));
+  return rows.filter(x=>x.saved||x.favorite||!x.expiresAt||x.expiresAt.toMillis()>Date.now());
  },
  async retain(id,favorite=false){
   const user=auth.currentUser;
