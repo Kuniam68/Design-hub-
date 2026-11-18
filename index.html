@@ -434,7 +434,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  drawer.addEventListener('click',e=>{const item=e.target.closest('[data-workspace-action]');if(!item)return;const action=item.dataset.workspaceAction;
  if(action==='logout'){toggle(false);window.mediScriptSignOut();return;}
  if(action==='profile'){toggle(false);document.getElementById('doctor-profile-section')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
- if(action==='prescription'){toggle(false);document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});return;}
+ if(action==='prescription'){toggle(false);window.startNewPrescription();return;}
  notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
  });
 })();
@@ -879,6 +879,71 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     addMedicine();
     updatePreview();
   };
+
+  /* ===== NEW PRESCRIPTION =====
+     Preserve the authenticated doctor's saved identity and chamber profile.
+     Clear patient-specific fields, investigations and all medicine rows.
+     No data is sent to storage by this action.
+  */
+  function startNewPrescription() {
+    const panel = document.querySelector('.form-panel');
+    const profile = document.getElementById('doctor-profile-section');
+    if (!panel || !profile) return;
+
+    const controls = Array.from(panel.querySelectorAll('input, select, textarea'))
+      .filter(el => !profile.contains(el) && !['button','submit','reset','hidden'].includes(el.type));
+    const hasPatientData = controls.some(el => {
+      if (el.type === 'checkbox' || el.type === 'radio') return el.checked !== el.defaultChecked;
+      if (el.tagName === 'SELECT') {
+        const defaultOption = Array.from(el.options).find(o => o.defaultSelected) || el.options[0];
+        return el.value !== (defaultOption ? defaultOption.value : '');
+      }
+      return el.value.trim() !== (el.defaultValue || '').trim();
+    }) || selectedInvestigations.length > 0 ||
+      Array.from(document.querySelectorAll('#med-container .med-item')).some(item =>
+        Array.from(item.querySelectorAll('input, textarea')).some(el => el.value.trim() !== '') ||
+        Array.from(item.querySelectorAll('select')).some(el => {
+          const defaultOption = Array.from(el.options).find(o => o.defaultSelected) || el.options[0];
+          return el.value !== (defaultOption ? defaultOption.value : '');
+        })
+      );
+
+    if (hasPatientData && !window.confirm('Start a new prescription? Unsaved patient details, medicines and investigations will be cleared. Your doctor profile will be kept.')) return;
+
+    controls.forEach(el => {
+      if (el.type === 'checkbox' || el.type === 'radio') {
+        el.checked = el.defaultChecked;
+      } else if (el.tagName === 'SELECT') {
+        const defaultOption = Array.from(el.options).find(o => o.defaultSelected) || el.options[0];
+        if (defaultOption) el.value = defaultOption.value;
+      } else {
+        el.value = el.defaultValue || '';
+      }
+    });
+    selectedInvestigations = [];
+    renderInvTags();
+    document.getElementById('invResults').style.display = 'none';
+    document.getElementById('med-container').replaceChildren();
+    medCount = 0;
+
+    // Recalculate conditional visibility without reloading or losing Firebase state.
+    document.querySelectorAll('[id^="sub-"]').forEach(box => box.style.display = 'none');
+    panel.querySelectorAll('input[type="checkbox"][onchange], select[onchange]').forEach(el => {
+      if (!profile.contains(el)) el.dispatchEvent(new Event('change', {bubbles:false}));
+    });
+    toggleDietOthers();
+    toggleReferral();
+    toggleMurmur();
+    addMedicine();
+    updatePreview();
+    if (window.matchMedia('(max-width:900px), (orientation:portrait) and (max-width:1300px)').matches) {
+      window.scrollTo({top:0,behavior:'smooth'});
+    } else {
+      panel.scrollTo({top:0,behavior:'smooth'});
+    }
+    document.getElementById('pName')?.focus({preventScroll:true});
+  }
+  window.startNewPrescription = startNewPrescription;
 
   function saveProfile() {
     if(typeof window.saveDoctorProfileToCloud!=='function'){
