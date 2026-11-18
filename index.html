@@ -18,12 +18,18 @@ const profileStatus=()=>document.getElementById('profileSaveStatus');
 function showProfileStatus(message,isError=false){const el=profileStatus();if(el){el.textContent=message;el.style.color=isError?'#b91c1c':'#16685e';}}
 let profileLoadedFor=null;
 let doctorProfilePhoto='';
+let practiceLocations=[];
+let activePracticeLocationId='';
+window.getPracticeLocations=()=>practiceLocations.map(item=>({...item}));
+window.getActivePracticeLocationId=()=>activePracticeLocationId;
 window.getDoctorProfilePhoto=()=>doctorProfilePhoto;
 window.setDoctorProfilePhotoDraft=value=>{doctorProfilePhoto=value;};
 async function loadDoctorProfile(user){
   const uid=user.uid;
   profileLoadedFor=null;
   doctorProfilePhoto='';
+  practiceLocations=[];
+  activePracticeLocationId='';
   profileFields.forEach(id=>{const input=document.getElementById(id);if(input)input.value='';});
   if(typeof window.updatePreview==='function')window.updatePreview();
   showProfileStatus('Loading your private profile…');
@@ -33,7 +39,12 @@ async function loadDoctorProfile(user){
     const data=snapshot.exists()?snapshot.data():{};
     doctorProfilePhoto=typeof data.profilePhoto==='string' && /^data:image\/jpeg;base64,/.test(data.profilePhoto) ? data.profilePhoto : '';
     profileFields.forEach(id=>{const input=document.getElementById(id);if(input)input.value=typeof data[id]==='string'?data[id]:'';});
+    practiceLocations=Array.isArray(data.practiceLocations)?data.practiceLocations.filter(x=>x&&typeof x.id==='string'&&typeof x.name==='string').slice(0,40):[];
+    activePracticeLocationId=typeof data.activePracticeLocationId==='string'?data.activePracticeLocationId:'';
+    if(!practiceLocations.some(x=>x.id===activePracticeLocationId))activePracticeLocationId='';
+    if(activePracticeLocationId){const loc=practiceLocations.find(x=>x.id===activePracticeLocationId);document.getElementById('cHospital').value=loc.name;document.getElementById('cLocation').value=loc.address||'';}
     profileLoadedFor=uid;
+    window.dispatchEvent(new Event('mediscript-locations-loaded'));
     if(typeof window.updatePreview==='function')window.updatePreview();
     showProfileStatus(snapshot.exists()?'Profile loaded from your account.':'No saved profile yet. Enter your details and save.');
   }catch(error){
@@ -43,6 +54,30 @@ async function loadDoctorProfile(user){
 }
 window.isDoctorProfileReady=()=>!!auth.currentUser&&profileLoadedFor===auth.currentUser.uid;
 window.getDoctorAccountEmail=()=>auth.currentUser?.email||'';
+window.savePracticeLocationsToCloud=async function(items,activeId){
+  const user=auth.currentUser;
+  if(!user||profileLoadedFor!==user.uid)throw Error('Your profile must finish loading before saving.');
+  if(!Array.isArray(items)||items.length>40)throw Error('Too many locations.');
+  const cleaned=items.map(x=>({
+    id:String(x.id||'').slice(0,80),
+    name:String(x.name||'').trim().slice(0,150),
+    address:String(x.address||'').trim().slice(0,300),
+    phone:String(x.phone||'').trim().slice(0,60),
+    days:String(x.days||'').trim().slice(0,120),
+    hours:String(x.hours||'').trim().slice(0,100),
+    type:x.type==='Hospital'?'Hospital':'Chamber'
+  }));
+  if(cleaned.some(x=>!x.id||!x.name)||new Set(cleaned.map(x=>x.id)).size!==cleaned.length)throw Error('Every location needs a unique ID and name.');
+  if(activeId&&!cleaned.some(x=>x.id===activeId))throw Error('Choose a valid active location.');
+  await setDoc(doc(db,'doctors',user.uid),{practiceLocations:cleaned,activePracticeLocationId:activeId||'',updatedAt:serverTimestamp()},{merge:true});
+  practiceLocations=cleaned;
+  activePracticeLocationId=activeId||'';
+  const active=cleaned.find(x=>x.id===activePracticeLocationId);
+  if(active){document.getElementById('cHospital').value=active.name;document.getElementById('cLocation').value=active.address;}
+  window.updatePreview?.();
+  window.dispatchEvent(new Event('mediscript-locations-loaded'));
+  return true;
+};
 window.saveDoctorProfileToCloud=async function(){
   const user=auth.currentUser;
   if(!user){showProfileStatus('Please sign in first.',true);return false;}
@@ -545,6 +580,58 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 @media(max-width:640px){.my-profile-photo-button .my-profile-avatar svg{width:28px;height:28px}}
 @media(prefers-reduced-motion:reduce){.my-profile-photo-button .my-profile-avatar svg{transition:none}}
 </style>
+<style id="practice-location-styles">
+.practice-dialog,.practice-edit-dialog{border:0;padding:0;margin:auto;max-height:calc(100dvh - 26px);overflow:auto;font-family:inherit;color:#193b37;background:#f7faf9;box-shadow:0 30px 95px #082b3055}
+.practice-dialog{width:min(760px,calc(100vw - 24px));border-radius:22px;animation:practiceRise .25s ease-out}
+.practice-edit-dialog{width:min(560px,calc(100vw - 24px));border-radius:19px;padding:26px;animation:practiceRise .22s ease-out}
+.practice-dialog::backdrop,.practice-edit-dialog::backdrop{background:#092e34ad;backdrop-filter:blur(4px)}
+.practice-top{background:linear-gradient(115deg,#103943,#0d786e);padding:30px;color:#fff;position:relative}
+.practice-eyebrow{font-size:10px;letter-spacing:2px;font-weight:800;color:#a7e8da;margin-bottom:9px}
+.practice-top h2{font-size:27px;line-height:1.2;margin:0 40px 8px 0}
+.practice-top p{font-size:13px;color:#c5e9e1;margin:0}
+.practice-close{position:absolute;top:18px;right:19px;width:37px;height:37px;border:1px solid #ffffff55;background:#ffffff22;color:#fff;border-radius:10px;font-size:24px;cursor:pointer}
+.practice-summary{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+.practice-summary span{background:#ffffff1f;border:1px solid #ffffff33;border-radius:30px;padding:7px 12px;font-size:11px;font-weight:700}
+.practice-content{padding:25px}
+.practice-toolbar{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:20px}
+.practice-toolbar strong{font-size:17px;display:block}
+.practice-toolbar small{display:block;font-size:11px;color:#66817b;line-height:1.6;margin-top:4px}
+.practice-toolbar button,.practice-edit-actions button:last-child{border:0;background:#0d786e;color:white;border-radius:11px;padding:12px 15px;font:700 12px inherit;cursor:pointer;white-space:nowrap}
+.practice-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.practice-card{border:1px solid #dceae5;border-radius:16px;background:#fff;padding:18px;min-width:0;box-shadow:0 4px 14px #0e50470a}
+.practice-card.active{border:2px solid #0c8473;background:linear-gradient(155deg,#fff,#f1faf5);padding:17px}
+.practice-card-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.practice-card-icon{width:43px;height:43px;flex:none;border-radius:12px;background:#e1f2eb;color:#0a756a;display:grid;place-items:center;font-size:21px}
+.practice-card-title{min-width:0;flex:1}
+.practice-card-title strong{display:block;font-size:14px;overflow-wrap:anywhere}
+.practice-card-title span{font-size:10px;color:#738981}
+.practice-pill{display:inline-block;border-radius:25px;padding:5px 9px;background:#d7f4e7;color:#0b705d;font-size:10px;font-weight:800}
+.practice-card-details{font-size:12px;color:#5c7770;line-height:1.65;overflow-wrap:anywhere;min-height:50px}
+.practice-card-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}
+.practice-card-actions button{border:1px solid #d5e6df;border-radius:9px;background:#f6faf8;color:#1a6258;padding:8px 10px;font:700 11px inherit;cursor:pointer}
+.practice-card-actions .practice-use{background:#0b786c;color:#fff;border-color:#0b786c}
+.practice-card-actions .practice-delete{color:#ad453c}
+.practice-empty{grid-column:1/-1;text-align:center;padding:40px 18px;background:#fff;border:1px dashed #bcd9d0;border-radius:17px}
+.practice-empty span{display:block;font-size:36px;margin-bottom:9px}
+.practice-empty strong{display:block;font-size:17px;margin-bottom:7px}
+.practice-empty p{font-size:12px;color:#68827c;line-height:1.6}
+.practice-status{font-size:12px;color:#22685c;min-height:20px;margin-top:16px}
+.practice-footer{border-top:1px solid #dce8e3;margin-top:10px;padding-top:17px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.practice-footer button,.practice-edit-actions button:first-child{border:0;background:#e5efeb;color:#275b52;border-radius:10px;padding:11px 17px;font:700 12px inherit;cursor:pointer}
+.practice-footer span{font-size:10px;color:#789087}
+.practice-edit-dialog h2{font-size:22px;margin:0 0 6px;color:#144f49}
+.practice-edit-dialog p{font-size:12px;color:#71867f;margin:0 0 20px}
+.practice-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.practice-edit-grid label{font-size:11px;font-weight:700;color:#44675e;display:flex;flex-direction:column;gap:6px;min-width:0}
+.practice-edit-grid .practice-wide{grid-column:1/-1}
+.practice-edit-grid input,.practice-edit-grid select{width:100%;min-width:0;padding:12px;border:1px solid #ccdfd7;border-radius:10px;background:#fff;font:inherit;font-size:13px;color:#173e39}
+.practice-edit-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.practice-dialog button:focus-visible,.practice-edit-dialog button:focus-visible,.practice-edit-dialog input:focus-visible,.practice-edit-dialog select:focus-visible{outline:3px solid #22a695;outline-offset:2px}
+@keyframes practiceRise{from{opacity:0;transform:translateY(17px) scale(.98)}to{opacity:1;transform:none}}
+@media(max-width:620px){.practice-top{padding:24px 19px}.practice-content{padding:18px}.practice-toolbar{align-items:flex-start}.practice-list{grid-template-columns:1fr}.practice-toolbar button{padding:11px}.practice-edit-dialog{padding:20px}.practice-edit-grid{grid-template-columns:1fr}.practice-edit-grid .practice-wide{grid-column:auto}}
+@media(prefers-reduced-motion:reduce){.practice-dialog,.practice-edit-dialog{animation:none}}
+@media print{.practice-dialog,.practice-edit-dialog{display:none!important}}
+</style>
 </head>
 <body>
 <header class="workspace-header" aria-label="MediScript Pro navigation">
@@ -562,7 +649,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <div class="workspace-drawer-head"><span>Workspace menu</span><button type="button" class="workspace-close" id="workspaceCloseButton" aria-label="Close menu">×</button></div>
   <button type="button" class="workspace-nav-item" data-workspace-action="prescription"><span>✚</span>New Prescription</button>
   <button type="button" class="workspace-nav-item" data-workspace-action="profile"><span>👤</span>My Profile</button>
-  <button type="button" class="workspace-nav-item planned" data-workspace-action="locations"><span>🏥</span>Hospitals &amp; Chambers <small>Planned</small></button>
+  <button type="button" class="workspace-nav-item" data-workspace-action="locations"><span>🏥</span>Hospitals &amp; Chambers</button>
   <button type="button" class="workspace-nav-item planned" data-workspace-action="history"><span>🕘</span>Prescription History <small>Planned</small></button>
   <button type="button" class="workspace-nav-item planned" data-workspace-action="patients"><span>👥</span>Patient Directory <small>Planned</small></button>
   <button type="button" class="workspace-nav-item planned" data-workspace-action="templates"><span>📋</span>Templates &amp; Medicine Favorites <small>Planned</small></button>
@@ -580,6 +667,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  drawer.addEventListener('click',e=>{const item=e.target.closest('[data-workspace-action]');if(!item)return;const action=item.dataset.workspaceAction;
  if(action==='logout'){toggle(false);window.mediScriptSignOut();return;}
  if(action==='profile'){toggle(false);window.openMyProfile();return;}
+ if(action==='locations'){toggle(false);window.openPracticeLocations();return;}
  if(action==='prescription'){toggle(false);window.startNewPrescription();return;}
  notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
  });
@@ -803,6 +891,36 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   });
 })();
 </script>
+<dialog class="practice-dialog" id="practiceDialog" aria-labelledby="practiceTitle">
+  <div class="practice-top">
+    <button class="practice-close" type="button" id="practiceClose" aria-label="Close locations">×</button>
+    <div class="practice-eyebrow">MEDISCRIPT PRO · PRACTICE MANAGEMENT</div>
+    <h2 id="practiceTitle">Hospitals &amp; Chambers</h2>
+    <p>One professional identity. Every place you practise.</p>
+    <div class="practice-summary"><span id="practiceCount">0 locations</span><span id="practiceActiveLabel">No active location</span></div>
+  </div>
+  <div class="practice-content">
+    <div class="practice-toolbar"><div><strong>My workplaces</strong><small>Choose a location to use its name and address on your prescription.</small></div><button type="button" id="practiceAdd">＋ Add location</button></div>
+    <div id="practiceList" class="practice-list"></div>
+    <p id="practiceStatus" class="practice-status" role="status" aria-live="polite"></p>
+    <div class="practice-footer"><button type="button" id="practiceDismiss">Close</button><span>Saved privately to your signed-in doctor profile</span></div>
+  </div>
+</dialog>
+<dialog class="practice-edit-dialog" id="practiceEditDialog" aria-labelledby="practiceEditTitle">
+  <form id="practiceEditForm">
+    <h2 id="practiceEditTitle">Add a workplace</h2>
+    <p>Set up a hospital or chamber. Fields marked * are required.</p>
+    <div class="practice-edit-grid">
+      <label>Workplace type *<select name="type"><option>Chamber</option><option>Hospital</option></select></label>
+      <label>Workplace name *<input name="name" required maxlength="150" placeholder="e.g. City Medical Centre"></label>
+      <label class="practice-wide">Address / location<input name="address" maxlength="300" placeholder="Street, area, city"></label>
+      <label>Contact number<input name="phone" type="tel" maxlength="60" placeholder="Optional"></label>
+      <label>Visiting days<input name="days" maxlength="120" placeholder="e.g. Sun–Thu"></label>
+      <label class="practice-wide">Consultation hours<input name="hours" maxlength="100" placeholder="e.g. 5:00 PM – 9:00 PM"></label>
+    </div>
+    <div class="practice-edit-actions"><button type="button" id="practiceEditCancel">Cancel</button><button type="submit" id="practiceEditSave">Save workplace</button></div>
+  </form>
+</dialog>
 <!-- ================= LEFT PANEL: INPUTS ================= -->
 <div class="form-panel">
 
