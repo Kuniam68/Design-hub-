@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MediScript Pro | A4 Print & Download</title>
+<style id="auth-visibility">body{visibility:hidden!important}</style>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+import {getAuth,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import {firebaseConfig} from './firebase-config.js';
+const auth=getAuth(initializeApp(firebaseConfig));
+onAuthStateChanged(auth,user=>{if(!user){location.replace('./login.html');return;}document.getElementById('auth-visibility')?.remove();},()=>{location.replace('./login.html')});
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
