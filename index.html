@@ -921,6 +921,83 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     <div class="practice-edit-actions"><button type="button" id="practiceEditCancel">Cancel</button><button type="submit" id="practiceEditSave">Save workplace</button></div>
   </form>
 </dialog>
+<script id="practice-location-script">
+(function(){
+ const dialog=document.getElementById('practiceDialog'),editor=document.getElementById('practiceEditDialog'),form=document.getElementById('practiceEditForm');
+ const list=document.getElementById('practiceList'),status=document.getElementById('practiceStatus');
+ let items=[],activeId='',editingId='',busy=false;
+ const makeId=()=>crypto.randomUUID?.()||('loc-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+ const safe=(x)=>String(x||'');
+ const show=(message,error=false)=>{status.textContent=message;status.style.color=error?'#b91c1c':'#22685c';};
+ function reload(){items=window.getPracticeLocations?.()||[];activeId=window.getActivePracticeLocationId?.()||'';render();}
+ function element(tag,cls,txt){const el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+ function action(label,cls,callback){const btn=element('button',cls,label);btn.type='button';btn.disabled=busy;btn.addEventListener('click',callback);return btn;}
+ function render(){
+  list.replaceChildren();
+  document.getElementById('practiceCount').textContent=items.length+' '+(items.length===1?'location':'locations');
+  const active=items.find(x=>x.id===activeId);
+  document.getElementById('practiceActiveLabel').textContent=active?'Active: '+active.name:'No active location';
+  if(!items.length){
+    const empty=element('div','practice-empty');
+    empty.append(element('span','', '🏥'),element('strong','','Your practice, beautifully organized'),element('p','','Add your first hospital or chamber to manage multiple workplaces and choose where you are prescribing.'));
+    list.append(empty);return;
+  }
+  items.forEach(loc=>{
+   const card=element('article','practice-card'+(loc.id===activeId?' active':''));
+   const top=element('div','practice-card-top'),ico=element('div','practice-card-icon',loc.type==='Hospital'?'🏥':'✚'),title=element('div','practice-card-title');
+   title.append(element('strong','',loc.name),element('span','',loc.type));
+   top.append(ico,title);if(loc.id===activeId)top.append(element('span','practice-pill','ACTIVE'));
+   const details=element('div','practice-card-details');
+   [loc.address,loc.phone,loc.days,loc.hours].filter(Boolean).forEach(t=>details.append(element('div','',t)));
+   const buttons=element('div','practice-card-actions');
+   if(loc.id!==activeId)buttons.append(action('Use on prescription','practice-use',()=>setActive(loc.id)));
+   buttons.append(action('Edit','',()=>edit(loc.id)),action('Delete','practice-delete',()=>remove(loc.id)));
+   card.append(top,details,buttons);list.append(card);
+  });
+ }
+ async function persist(next,nextActive,success){
+   if(busy)return;
+   busy=true;show('Saving your workplaces…');render();
+   document.getElementById('practiceAdd').disabled=true;
+   try{await window.savePracticeLocationsToCloud(next,nextActive);items=next;activeId=nextActive;show(success);render();}
+   catch(error){show('Unable to save. Check your connection and Firestore permissions, then try again.',true);console.error('Location save failed',error);}
+   finally{busy=false;document.getElementById('practiceAdd').disabled=false;render();}
+ }
+ async function setActive(id){await persist(items,id,'Active workplace updated. Its name and address now appear on the prescription.');}
+ function edit(id=''){
+   if(busy)return;
+   editingId=id;form.reset();
+   const loc=items.find(x=>x.id===id);
+   for(const key of ['type','name','address','phone','days','hours'])form.elements.namedItem(key).value=loc?.[key]||(key==='type'?'Chamber':'');
+   document.getElementById('practiceEditTitle').textContent=loc?'Edit workplace':'Add a workplace';
+   editor.showModal();
+ }
+ async function remove(id){
+   const loc=items.find(x=>x.id===id);if(!loc||busy)return;
+   if(!confirm('Delete '+loc.name+' from your saved workplaces? This does not delete any prescriptions.'))return;
+   await persist(items.filter(x=>x.id!==id),activeId===id?'':activeId,'Workplace removed.');
+ }
+ form.addEventListener('submit',async e=>{
+   e.preventDefault();if(busy||!form.reportValidity())return;
+   const data=Object.fromEntries(['type','name','address','phone','days','hours'].map(key=>[key,form.elements.namedItem(key).value.trim()]));
+   if(!data.name){form.elements.namedItem('name').focus();return;}
+   const id=editingId||makeId(),next=items.some(x=>x.id===id)?items.map(x=>x.id===id?{...data,id}:x):[...items,{...data,id}];
+   if(next.length>40){show('Maximum 40 workplaces supported.',true);return;}
+   editor.close();
+   await persist(next,activeId||id,'Workplace saved. Select Use on prescription to switch your active location.');
+ });
+ document.getElementById('practiceAdd').addEventListener('click',()=>edit());
+ document.getElementById('practiceEditCancel').addEventListener('click',()=>editor.close());
+ document.getElementById('practiceClose').addEventListener('click',()=>dialog.close());
+ document.getElementById('practiceDismiss').addEventListener('click',()=>dialog.close());
+ window.openPracticeLocations=()=>{
+   reload();show(window.isDoctorProfileReady?.()?'Select a workplace or add a new one.':'Profile is loading. Please wait before saving.',!window.isDoctorProfileReady?.());
+   document.getElementById('practiceAdd').disabled=!window.isDoctorProfileReady?.();
+   dialog.showModal();
+ };
+ window.addEventListener('mediscript-locations-loaded',()=>{if(dialog.open)reload();});
+})();
+</script>
 <!-- ================= LEFT PANEL: INPUTS ================= -->
 <div class="form-panel">
 
