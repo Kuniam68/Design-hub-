@@ -2369,7 +2369,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  function capture(){
    const fields={};
    mainControls().forEach((el,i)=>fields[String(i)]=controlValue(el));
-   const medicines=medRows().map(row=>Array.from(row.querySelectorAll('input,select,textarea')).map(controlValue));
+   const medicines=medRows().map(row=>({values:Array.from(row.querySelectorAll('input,select,textarea')).map(controlValue)}));
    return {version:1,patientName:String(document.getElementById('pName').value||'').trim().slice(0,160),
      patientPhone:String(document.getElementById('pPhone').value||'').trim().slice(0,80),
      patientAge:String(document.getElementById('pAge').value||'').trim().slice(0,40),
@@ -2386,7 +2386,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    mainControls().forEach((el,i)=>{if(Object.prototype.hasOwnProperty.call(record.fields,String(i)))applyValue(el,record.fields[String(i)]);});
    const container=document.getElementById('med-container');container.replaceChildren();medCount=0;
    const rows=record.medicines.slice(0,100);
-   rows.forEach(values=>{
+   rows.forEach(item=>{
+     const values=Array.isArray(item)?item:(Array.isArray(item?.values)?item.values:[]);
      addMedicine();
      const controls=Array.from(container.lastElementChild.querySelectorAll('input,select,textarea'));
      controls.forEach((el,i)=>{if(i<values.length)applyValue(el,values[i]);});
