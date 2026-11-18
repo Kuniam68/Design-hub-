@@ -17,9 +17,13 @@ const profileFields=['dName','dReg','dDegrees','dPhone','dEmail','cHospital','cL
 const profileStatus=()=>document.getElementById('profileSaveStatus');
 function showProfileStatus(message,isError=false){const el=profileStatus();if(el){el.textContent=message;el.style.color=isError?'#b91c1c':'#16685e';}}
 let profileLoadedFor=null;
+let doctorProfilePhoto='';
+window.getDoctorProfilePhoto=()=>doctorProfilePhoto;
+window.setDoctorProfilePhotoDraft=value=>{doctorProfilePhoto=value;};
 async function loadDoctorProfile(user){
   const uid=user.uid;
   profileLoadedFor=null;
+  doctorProfilePhoto='';
   profileFields.forEach(id=>{const input=document.getElementById(id);if(input)input.value='';});
   if(typeof window.updatePreview==='function')window.updatePreview();
   showProfileStatus('Loading your private profile…');
@@ -27,6 +31,7 @@ async function loadDoctorProfile(user){
     const snapshot=await getDoc(doc(db,'doctors',uid));
     if(auth.currentUser?.uid!==uid)return;
     const data=snapshot.exists()?snapshot.data():{};
+    doctorProfilePhoto=typeof data.profilePhoto==='string' && /^data:image\/jpeg;base64,/.test(data.profilePhoto) ? data.profilePhoto : '';
     profileFields.forEach(id=>{const input=document.getElementById(id);if(input)input.value=typeof data[id]==='string'?data[id]:'';});
     profileLoadedFor=uid;
     if(typeof window.updatePreview==='function')window.updatePreview();
@@ -47,7 +52,7 @@ window.saveDoctorProfileToCloud=async function(){
   if(button)button.disabled=true;
   showProfileStatus('Saving your profile securely…');
   try{
-    await setDoc(doc(db,'doctors',user.uid),{...data,updatedAt:serverTimestamp()},{merge:true});
+    await setDoc(doc(db,'doctors',user.uid),{...data,profilePhoto:doctorProfilePhoto,updatedAt:serverTimestamp()},{merge:true});
     showProfileStatus('Profile saved to your account. It will load when you sign in again.');
     return true;
   }catch(error){
@@ -521,6 +526,18 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 @media(max-width:640px){.my-profile-head{padding:21px 18px}.my-profile-body{padding:16px}.my-profile-identity{padding:16px}.my-profile-avatar{width:56px;height:56px;font-size:24px}.my-profile-idtag{display:none}.my-profile-layout{display:block}.my-profile-tabs{flex-direction:row;position:static;margin-bottom:14px;padding:5px}.my-profile-tab{text-align:center;flex:1;font-size:10px;padding:12px 3px}.my-profile-section{padding:16px;min-height:0}}
 @media(prefers-reduced-motion:reduce){.my-profile-dialog{animation:none}}
 </style>
+<style id="my-profile-photo-styles">
+.my-profile-photo-area{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;gap:5px}
+.my-profile-photo-button{position:relative;display:block;border:0;background:transparent;padding:0;cursor:pointer;border-radius:50%;width:76px;height:76px}
+.my-profile-photo-button .my-profile-avatar{width:76px;height:76px}
+.my-profile-photo-button img{position:absolute;inset:0;width:76px;height:76px;object-fit:cover;border-radius:50%;border:2px solid #ffffff90}
+.my-profile-photo-button img[hidden]{display:none}
+.my-profile-camera{position:absolute;right:-5px;bottom:0;background:#fff;color:#0c766a;border:2px solid #0f6868;border-radius:50%;width:28px;height:28px;display:grid;place-items:center;font-size:13px;box-shadow:0 2px 6px #0002}
+.my-profile-photo-remove{border:0;background:#ffffff22;color:#fff;font:inherit;font-size:10px;text-decoration:underline;cursor:pointer;padding:3px 5px;border-radius:5px}
+.my-profile-photo-remove[hidden]{display:none}
+.my-profile-photo-button:focus-visible,.my-profile-photo-remove:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media(max-width:640px){.my-profile-photo-button,.my-profile-photo-button .my-profile-avatar,.my-profile-photo-button img{width:60px;height:60px}.my-profile-camera{width:24px;height:24px;font-size:11px}}
+</style>
 </head>
 <body>
 <header class="workspace-header" aria-label="MediScript Pro navigation">
@@ -584,7 +601,15 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   </div>
   <div class="my-profile-body">
     <div class="my-profile-identity">
-      <div class="my-profile-avatar" id="myProfileAvatar" aria-hidden="true">✚</div>
+      <div class="my-profile-photo-area">
+        <button type="button" class="my-profile-photo-button" id="myProfilePhotoButton" aria-label="Add or change optional profile photo" title="Add or change profile photo">
+          <span class="my-profile-avatar" id="myProfileAvatar" aria-hidden="true">✚</span>
+          <img id="myProfilePhotoPreview" alt="Your profile photo" hidden>
+          <span class="my-profile-camera" aria-hidden="true">📷</span>
+        </button>
+        <input type="file" id="myProfilePhotoInput" accept="image/jpeg,image/png,image/webp" hidden aria-label="Choose profile photo">
+        <button type="button" class="my-profile-photo-remove" id="myProfilePhotoRemove" hidden>Remove photo</button>
+      </div>
       <div><strong id="myProfileDisplayName">Doctor profile</strong><span>Professional prescription identity</span></div><span class="my-profile-idtag">● SIGNED IN</span>
     </div>
     <div class="my-profile-account-card" aria-label="Login account information">
@@ -592,7 +617,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
       <div class="my-profile-account-copy">
         <strong>Account email · Sign-in only</strong>
         <span id="myProfileAccount">Signed-in account</span>
-        <small>This is your Firebase login email. It is read-only here and does not automatically appear on prescriptions. The separate professional email below is optional and can be different.</small>
+        
       </div>
     </div>
     <form id="myProfileForm">
@@ -655,9 +680,49 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
       activateProfileTab(tabs[next].dataset.profileTab,true);
     });
   });
+  const photoButton=document.getElementById('myProfilePhotoButton');
+  const photoInput=document.getElementById('myProfilePhotoInput');
+  const photoPreview=document.getElementById('myProfilePhotoPreview');
+  const photoRemove=document.getElementById('myProfilePhotoRemove');
+  let photoDraft='',photoInitial='',photoProcessing=false;
+  function renderPhoto(){
+    if(photoDraft){photoPreview.src=photoDraft;photoPreview.hidden=false;photoRemove.hidden=false;}
+    else{photoPreview.hidden=true;photoPreview.removeAttribute('src');photoRemove.hidden=true;}
+  }
+  photoButton.addEventListener('click',()=>photoInput.click());
+  photoRemove.addEventListener('click',()=>{photoDraft='';renderPhoto();});
+  photoInput.addEventListener('change',async()=>{
+    const file=photoInput.files?.[0];
+    photoInput.value='';
+    if(!file)return;
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){
+      status.textContent='Choose a JPG, PNG or WebP photo smaller than 8 MB.';status.style.color='#b91c1c';return;
+    }
+    photoProcessing=true;save.disabled=true;
+    status.textContent='Preparing your profile photo…';
+    try{
+      const bitmap=await createImageBitmap(file);
+      const ratio=Math.min(1,320/Math.max(bitmap.width,bitmap.height));
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.max(1,Math.round(bitmap.width*ratio));
+      canvas.height=Math.max(1,Math.round(bitmap.height*ratio));
+      const ctx=canvas.getContext('2d');
+      if(!ctx)throw Error('Canvas unavailable');
+      ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+      bitmap.close?.();
+      const encoded=canvas.toDataURL('image/jpeg',.75);
+      if(encoded.length>180000)throw Error('Image too large after compression');
+      photoDraft=encoded;renderPhoto();
+      status.textContent='Photo ready. Select Save Profile to keep it.';
+      status.style.color='#426b60';
+    }catch(error){
+      status.textContent='Unable to process this photo. Please try a different image.';
+      status.style.color='#b91c1c';
+    }finally{photoProcessing=false;save.disabled=window.isDoctorProfileReady?.()!==true;}
+  });
   let initial={};
   const read=()=>Object.fromEntries(fields.map(id=>[id,form.elements.namedItem(id).value]));
-  const dirty=()=>fields.some(id=>form.elements.namedItem(id).value!==initial[id]);
+  const dirty=()=>fields.some(id=>form.elements.namedItem(id).value!==initial[id])||photoDraft!==photoInitial;
   function close(){
     if(dirty()&&!window.confirm('Discard your unsaved profile edits?'))return;
     dialog.close();
@@ -669,6 +734,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     activateProfileTab('identity');
     if(typeof dialog.showModal!=='function'){document.getElementById('doctor-profile-section')?.scrollIntoView({behavior:'smooth'});return;}
     initial=Object.fromEntries(fields.map(id=>[id,document.getElementById(id).value]));
+    photoInitial=window.getDoctorProfilePhoto?.()||'';
+    photoDraft=photoInitial;
+    renderPhoto();
     fields.forEach(id=>form.elements.namedItem(id).value=initial[id]);
     const name=initial.dName.trim()||'Doctor profile';
     document.getElementById('myProfileDisplayName').textContent=name;
@@ -693,16 +761,19 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
       return;
     }
     if(window.isDoctorProfileReady?.()!==true){status.textContent='Profile not ready. Please reopen after it loads.';return;}
-    if(typeof window.saveDoctorProfileToCloud!=='function')return;
+    if(typeof window.saveDoctorProfileToCloud!=='function'||photoProcessing)return;
     const values=read();
+    const originalPhoto=window.getDoctorProfilePhoto?.()||'';
     const original=Object.fromEntries(fields.map(id=>[id,document.getElementById(id).value]));
     save.disabled=true;
     status.textContent='Saving securely to your account…';
     fields.forEach(id=>document.getElementById(id).value=values[id]);
+    window.setDoctorProfilePhotoDraft?.(photoDraft);
     try{
       const ok=await window.saveDoctorProfileToCloud();
       if(!ok){
         fields.forEach(id=>document.getElementById(id).value=original[id]);
+        window.setDoctorProfilePhotoDraft?.(originalPhoto);
         status.textContent='Save failed. Your changes are still in this window; please retry.';
         status.style.color='#b91c1c';
         window.updatePreview?.();
@@ -710,12 +781,14 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
       }
       window.updatePreview?.();
       initial=values;
+      photoInitial=photoDraft;
       status.textContent='Profile saved successfully.';
       status.style.color='#176451';
       document.getElementById('myProfileDisplayName').textContent=values.dName||'Doctor profile';
       dialog.close();
     }catch(error){
       fields.forEach(id=>document.getElementById(id).value=original[id]);
+      window.setDoctorProfilePhotoDraft?.(originalPhoto);
       window.updatePreview?.();
       status.textContent='Unable to save right now. Please retry.';
       status.style.color='#b91c1c';
