@@ -78,26 +78,55 @@ window.savePracticeLocationsToCloud=async function(items,activeId){
   window.dispatchEvent(new Event('mediscript-locations-loaded'));
   return true;
 };
-/* History records are saved only by explicit user action. Each doctor's records
-   live in doctors/{uid}/prescriptions; server rules must restrict access by uid. */
+/* Prescription history: idempotent capture on print/PDF, temporary until saved.
+   Firebase TTL must be enabled on expiresAt for physical 24-hour deletion. */
 window.historyCloud={
- async save(record){
+ async capture(record){
   const user=auth.currentUser;
   if(!user||profileLoadedFor!==user.uid)throw Error('Sign in and wait for your profile to load.');
-  if(!record||typeof record!=='object'||!record.patientName)throw Error('Patient name is required.');
-  const ref=await addDoc(collection(db,'doctors',user.uid,'prescriptions'),{...record,createdAt:serverTimestamp()});
+  if(!record||!record.patientName)throw Error('Enter a patient name before exporting to history.');
+  const bytes=new TextEncoder().encode(JSON.stringify(record));
+  const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
+  const ref=doc(db,'doctors',user.uid,'prescriptions','rx'+hash);
+  const existing=await getDoc(ref);
+  if(existing.exists()){
+   const data=existing.data();
+   if(data.saved||data.favorite||!data.expiresAt||data.expiresAt.toMillis()>Date.now())return ref.id;
+  }
+  const now=Date.now();
+  await setDoc(ref,{...record,saved:false,favorite:false,createdAt:serverTimestamp(),expiresAt:new Date(now+24*60*60*1000)},{merge:false});
   return ref.id;
  },
  async list(){
   const user=auth.currentUser;
   if(!user||profileLoadedFor!==user.uid)throw Error('Sign in and wait for your profile to load.');
   const snapshot=await getDocs(query(collection(db,'doctors',user.uid,'prescriptions'),orderBy('createdAt','desc'),limit(100)));
-  return snapshot.docs.map(d=>({id:d.id,...d.data()}));
+  return snapshot.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.saved||x.favorite||!x.expiresAt||x.expiresAt.toMillis()>Date.now());
+ },
+ async retain(id,favorite=false){
+  const user=auth.currentUser;
+  if(!user||profileLoadedFor!==user.uid)throw Error('Sign in and wait for your profile to load.');
+  const ref=doc(db,'doctors',user.uid,'prescriptions',id);
+  const snap=await getDoc(ref);
+  if(!snap.exists())throw Error('Record not found.');
+  const data=snap.data();
+  if(!data.saved&&!data.favorite&&data.expiresAt&&data.expiresAt.toMillis()<=Date.now())throw Error('Record expired.');
+  await setDoc(ref,{saved:true,favorite:Boolean(favorite)||Boolean(data.favorite),expiresAt:null},{merge:true});
+ },
+ async favorite(id,value){
+  const user=auth.currentUser;
+  if(!user||profileLoadedFor!==user.uid)throw Error('Sign in and wait for your profile to load.');
+  const ref=doc(db,'doctors',user.uid,'prescriptions',id);
+  const snap=await getDoc(ref);
+  if(!snap.exists())throw Error('Record not found.');
+  const data=snap.data();
+  if(!data.saved&&!data.favorite&&data.expiresAt&&data.expiresAt.toMillis()<=Date.now())throw Error('Record expired.');
+  await setDoc(ref,{favorite:Boolean(value),saved:value?true:Boolean(data.saved),expiresAt:value?null:(data.saved?null:data.expiresAt||null)},{merge:true});
  },
  async remove(id){
   const user=auth.currentUser;
   if(!user||profileLoadedFor!==user.uid)throw Error('Sign in and wait for your profile to load.');
-  if(typeof id!=='string'||!/^[A-Za-z0-9]{10,40}$/.test(id))throw Error('Invalid prescription ID.');
+  if(typeof id!=='string'||!/^(rx[a-f0-9]{64}|[A-Za-z0-9]{10,40})$/.test(id))throw Error('Invalid prescription ID.');
   await deleteDoc(doc(db,'doctors',user.uid,'prescriptions',id));
  }
 };
@@ -746,6 +775,15 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 @media(prefers-reduced-motion:reduce){.history-dialog{animation:none}}
 @media print{.history-dialog{display:none!important}}
 </style>
+<style id="history-auto-workflow-styles">
+.history-filters{align-items:end}
+#historyFilter{border:1px solid #d4e6de;background:#fff;color:#1c6056;border-radius:11px;padding:12px;font-size:12px;max-width:150px}
+.history-record-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.history-record-meta span{background:#edf6f1;color:#28685c;border-radius:25px;padding:5px 10px;font-size:10px;font-weight:700}
+.history-record-meta .history-temp{background:#fff4df;color:#8a641e}
+.history-record-meta .history-fav{background:#fff4d7;color:#916008}
+@media(max-width:560px){.history-filters{flex-wrap:wrap}#historyFilter{max-width:none;flex:1 1 100%}}
+</style>
 </head>
 <body>
 <header class="workspace-header" aria-label="MediScript Pro navigation">
@@ -1118,18 +1156,18 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <button type="button" class="history-x" id="historyClose" aria-label="Close prescription history">×</button>
   <div class="history-kicker">MEDISCRIPT PRO · CLINICAL RECORDS</div>
   <h2 id="historyTitle">Prescription History</h2>
-  <p>Your saved prescriptions, organized and ready when you need them.</p>
-  <div class="history-stats"><span id="historyTotal">— saved records</span><span>🔒 Private account archive</span></div>
+  <p>Your prescriptions, organized and ready when you need them.</p>
+  <div class="history-stats"><span id="historyTotal">— records</span><span>🔒 Private account archive</span></div>
  </header>
  <div class="history-main">
   <div class="history-actions">
-   <div><strong>Prescription archive</strong><small>Save from the prescription editor, or use this shortcut to save your current work.</small></div>
-   <button type="button" id="historySaveCurrent" class="history-primary">＋ Save from editor</button>
+   <div><strong>Prescription archive</strong><small>Printed and downloaded prescriptions appear here automatically. Save important records to keep them.</small></div>
+
   </div>
-  <div class="history-filters"><label class="history-search-label" for="historySearch">Search records<input id="historySearch" type="search" placeholder="Search patient name, phone or diagnosis" autocomplete="off"></label><button type="button" id="historyRefresh">↻ Refresh</button></div>
+  <div class="history-filters"><select id="historyFilter" aria-label="Filter prescriptions"><option value="all">All records</option><option value="temporary">Temporary</option><option value="saved">Saved</option><option value="favorite">★ Favorites</option></select><label class="history-search-label" for="historySearch">Search records<input id="historySearch" type="search" placeholder="Search patient name, phone or diagnosis" autocomplete="off"></label><button type="button" id="historyRefresh">↻ Refresh</button></div>
   <div id="historyList" class="history-list" aria-live="polite"></div>
   <p id="historyStatus" class="history-status" role="status" aria-live="polite"></p>
-  <footer class="history-footer"><span>Records are saved to Firebase only when you select Save.</span><button type="button" id="historyDone">Close</button></footer>
+  <footer class="history-footer"><span>Temporary records expire after 24 hours. Save or favorite to keep them.</span><button type="button" id="historyDone">Close</button></footer>
  </div>
 </dialog>
 <!-- ================= LEFT PANEL: INPUTS ================= -->
@@ -1465,11 +1503,10 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 
   <!-- ACTION BUTTONS -->
   <div class="prescription-action-row" style="display:flex; gap:10px; margin-bottom:50px; flex-wrap:wrap;">
-    <button class="btn" type="button" id="btnSavePrescription" onclick="saveCurrentPrescriptionFromEditor()" style="background:#176b58;font-size:15px;padding:15px;flex:1;min-width:155px;">💾 Save Prescription</button>
     <button class="btn" id="btnDownload" onclick="downloadPDF()" style="background:#0f766e; font-size:15px; padding:15px; flex:1;">
       📥 Download PDF
     </button>
-    <button class="btn" type="button" onclick="window.print()" style="background:#0284c7; font-size:15px; padding:15px; flex:1;">
+    <button class="btn" type="button" onclick="printPrescription()" style="background:#0284c7; font-size:15px; padding:15px; flex:1;">
       🖨️ Print A4
     </button>
   </div>
@@ -2357,7 +2394,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    list.replaceChildren();document.getElementById('historyTotal').textContent=records.length+(records.length===100?'+':'')+' saved records';
    const term=search.value.trim().toLocaleLowerCase();
    const found=records.filter(r=>[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
-   if(!found.length){const empty=el('div','history-empty');empty.append(el('span','','🗂️'),el('strong','',term?'No matching prescriptions':'No prescriptions saved yet'),el('p','',term?'Try a different patient name, phone or diagnosis.':'Use Save Prescription in the editor to store a record you can reopen later.'));list.append(empty);return;}
+   if(!found.length){const empty=el('div','history-empty');empty.append(el('span','','🗂️'),el('strong','',term?'No matching prescriptions':'No prescriptions saved yet'),el('p','',term?'Try a different patient name, phone or diagnosis.':'Download or print a prescription to add it here automatically.'));list.append(empty);return;}
    found.forEach(r=>{
      const card=el('article','history-record'),top=el('div','history-record-top'),icon=el('div','history-record-icon','▤'),main=el('div','history-record-main');
      main.append(el('strong','',r.patientName||'Unnamed patient'));
@@ -2382,8 +2419,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    });
  }
  async function refresh(){
-   if(busy)return;busy=true;notify('Loading saved prescriptions…');list.replaceChildren(el('div','history-empty','Loading records…'));
-   try{records=await window.historyCloud.list();notify(records.length?'Your latest saved prescriptions are ready.':'No prescriptions saved yet.');}
+   if(busy)return;busy=true;notify('Loading prescription history…');list.replaceChildren(el('div','history-empty','Loading records…'));
+   try{records=await window.historyCloud.list();notify(records.length?'Your prescription history is ready.':'No prescriptions in history yet.');}
    catch(error){records=[];notify('Could not access saved records. Your Firebase permissions or connection may need attention.',true);console.error('History load failed',error);}
    finally{busy=false;render();}
  }
