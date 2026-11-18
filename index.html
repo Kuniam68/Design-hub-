@@ -379,6 +379,14 @@ body{padding-top:var(--workspace-header-height)!important;height:100dvh!importan
 .workspace-menu-notice{margin:12px 8px 0;padding:12px;background:#edf7f3;border-radius:10px;font-size:12px;line-height:1.5;color:#235b51}
 .form-panel,.preview-panel{height:calc(100dvh - var(--workspace-header-height))!important}
 #doctor-profile-section{scroll-margin-top:85px}
+/* On tablets and phones, keep the prescription preview in normal page flow.
+   The form must not trap the A4 preview beneath a fixed-height panel. */
+@media screen and (max-width:900px){
+  body{height:auto!important;min-height:100dvh!important;overflow-x:hidden!important;overflow-y:auto!important;flex-direction:column!important}
+  .form-panel,.preview-panel{height:auto!important;min-height:0!important;width:100%!important;overflow:visible!important;flex:none!important}
+  .preview-panel{display:flex!important;align-items:center!important;padding:18px 8px 36px!important}
+  .page-scaler{flex-shrink:0}
+}
 @media(max-width:560px){.workspace-header{padding:0 10px}.workspace-header-user{display:none}.workspace-brand small{display:none}.workspace-header-left,.workspace-header-right{gap:8px}.workspace-header-logout{padding:9px 10px}}
 @media print{body{padding-top:0!important;height:auto!important}.workspace-header,.workspace-drawer,.workspace-backdrop{display:none!important}.form-panel,.preview-panel{height:auto!important}}
 </style>
