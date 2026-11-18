@@ -2247,6 +2247,11 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   }
   window.addEventListener('resize', fitPreview);
 
+  function printPrescription(){
+    updatePreview();
+    window.capturePrescriptionToHistory?.();
+    window.print();
+  }
   /* ===== PDF EXPORT ===== */
   async function downloadPDF() {
     updatePreview();
@@ -2331,6 +2336,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      window.capturePrescriptionToHistory?.();
       setTimeout(() => URL.revokeObjectURL(url), 120000);
 
     } catch (err) {
@@ -2346,6 +2352,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 (function(){
  const dialog=document.getElementById('historyDialog'),list=document.getElementById('historyList'),status=document.getElementById('historyStatus'),search=document.getElementById('historySearch');
  let records=[],busy=false;
+ const filter=document.getElementById("historyFilter");
+ let captureInFlight=null;
  const notify=(message,error=false)=>{status.textContent=message;status.style.color=error?'#b91c1c':'#256d60';};
  const controlValue=el=>el.type==='checkbox'||el.type==='radio'?el.checked:el.value;
  const applyValue=(el,value)=>{if(el.type==='checkbox'||el.type==='radio')el.checked=Boolean(value);else el.value=String(value??'');};
@@ -2393,7 +2401,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  function render(){
    list.replaceChildren();document.getElementById('historyTotal').textContent=records.length+(records.length===100?'+':'')+' saved records';
    const term=search.value.trim().toLocaleLowerCase();
-   const found=records.filter(r=>[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
+   const found=records.filter(r=>(filter.value==='all'||(filter.value==='favorite'&&r.favorite)||(filter.value==='saved'&&r.saved)||(filter.value==='temporary'&&!r.saved&&!r.favorite))&&[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
    if(!found.length){const empty=el('div','history-empty');empty.append(el('span','','🗂️'),el('strong','',term?'No matching prescriptions':'No prescriptions saved yet'),el('p','',term?'Try a different patient name, phone or diagnosis.':'Download or print a prescription to add it here automatically.'));list.append(empty);return;}
    found.forEach(r=>{
      const card=el('article','history-record'),top=el('div','history-record-top'),icon=el('div','history-record-icon','▤'),main=el('div','history-record-main');
@@ -2401,12 +2409,32 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
      const date=r.createdAt?.toDate?.();
      main.append(el('small','',[(date instanceof Date&&!isNaN(date)?date.toLocaleString():'Date unavailable'),r.patientAge?'Age '+r.patientAge:'',r.workplace].filter(Boolean).join(' · ')));
      top.append(icon,main);card.append(top);
+     const meta=el('div','history-record-meta');
+     if(r.favorite)meta.append(el('span','history-fav','★ Favorite'));
+     else if(r.saved)meta.append(el('span','','✓ Saved'));
+     else{
+       const until=r.expiresAt?.toDate?.();
+       meta.append(el('span','history-temp','◷ Temporary · expires '+(until?until.toLocaleString():'within 24 hours')));
+     }
+     card.append(meta);
      if(r.diagnosis)card.append(el('p','history-record-diagnosis',r.diagnosis.slice(0,240)));
      const actions=el('div','history-record-buttons');
      actions.append(button('↗ Open prescription','history-open',()=>{
        if(hasUnsavedWork()&&!confirm('Open this saved prescription? Current unsaved patient information will be replaced. Your doctor profile stays unchanged.'))return;
        try{restore(r);dialog.close();document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});}
        catch(error){notify('Unable to open this record. '+error.message,true);}
+     }));
+     if(!r.saved)actions.append(button('Save permanently','',async()=>{
+       if(busy)return;busy=true;render();notify('Saving record…');
+       try{await window.historyCloud.retain(r.id);r.saved=true;r.expiresAt=null;notify('Prescription saved permanently.');}
+       catch(error){notify('Could not save record. Check your connection and permissions.',true);}
+       finally{busy=false;render();}
+     }));
+     actions.append(button(r.favorite?'★ Unfavorite':'☆ Favorite','',async()=>{
+       if(busy)return;busy=true;render();notify('Updating favorite…');
+       try{await window.historyCloud.favorite(r.id,!r.favorite);if(!r.favorite){r.saved=true;r.expiresAt=null;}r.favorite=!r.favorite;notify(r.favorite?'Added to Favorites and saved.':'Removed from Favorites.');}
+       catch(error){notify('Could not update favorite. Check your connection and permissions.',true);}
+       finally{busy=false;render();}
      }));
      actions.append(button('Delete','history-delete',async()=>{
        if(!confirm('Permanently delete the saved prescription for '+(r.patientName||'this patient')+'? This cannot be undone.'))return;
@@ -2424,30 +2452,23 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    catch(error){records=[];notify('Could not access saved records. Your Firebase permissions or connection may need attention.',true);console.error('History load failed',error);}
    finally{busy=false;render();}
  }
- async function saveCurrentRecord(){
-   if(busy)return;
+ window.capturePrescriptionToHistory=async()=>{
    const record=capture();
-   if(!record.patientName){notify('Enter a patient name before saving this prescription.',true);return;}
-   if(!confirm('Save this prescription for '+record.patientName+' to your private account history? This will store patient clinical details in Firebase.'))return;
-   busy=true;document.getElementById('historySaveCurrent').disabled=true;notify('Saving prescription…');
-   try{await window.historyCloud.save(record);notify('Prescription saved successfully.');}
-   catch(error){notify('Save failed. Check Firestore permissions and connection. The prescription remains in the editor.',true);console.error('History save failed',error);}
-   finally{busy=false;document.getElementById('historySaveCurrent').disabled=false;await refresh();}
- }
- window.saveCurrentPrescriptionFromEditor=async()=>{
-   if(!document.getElementById('pName').value.trim()){
-     alert('Enter a patient name before saving.');
-     document.getElementById('pName').focus();return;
-   }
-   dialog.showModal();
-   await saveCurrentRecord();
+   if(!record.patientName)return;
+   if(captureInFlight)return captureInFlight;
+   captureInFlight=window.historyCloud.capture(record).catch(error=>{
+     console.error('Automatic prescription history capture failed:',error);
+     window.dispatchEvent(new CustomEvent('mediscript-history-error',{detail:'Prescription was exported but history could not be updated. Check Firebase permissions and your connection.'}));
+   }).finally(()=>{captureInFlight=null;});
+   return captureInFlight;
  };
- document.getElementById('historySaveCurrent').addEventListener('click',saveCurrentRecord);
-  document.getElementById('historyRefresh').addEventListener('click',refresh);
+ document.getElementById('historyRefresh').addEventListener('click',refresh);
  document.getElementById('historyClose').addEventListener('click',()=>dialog.close());
  document.getElementById('historyDone').addEventListener('click',()=>dialog.close());
  search.addEventListener('input',render);
- window.openPrescriptionHistory=()=>{dialog.showModal();search.value='';refresh();};
+ filter.addEventListener('change',render);
+ window.addEventListener('mediscript-history-error',e=>{if(dialog.open)notify(e.detail,true);else alert(e.detail);});
+ window.openPrescriptionHistory=()=>{dialog.showModal();search.value='';filter.value='all';refresh();};
 })();
 
 </script>
