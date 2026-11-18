@@ -86,7 +86,8 @@ window.historyCloud={
   const user=auth.currentUser;
   if(!user||profileLoadedFor!==user.uid)throw Error('Sign in and wait for your profile to load.');
   if(!record||!record.patientName)throw Error('Enter a patient name before exporting to history.');
-  const bytes=new TextEncoder().encode(JSON.stringify(record));
+  const {editedFrom:sourceIdForHash,...prescriptionContent}=record;
+  const bytes=new TextEncoder().encode(JSON.stringify(prescriptionContent));
   const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
   const ref=doc(db,'doctors',user.uid,'prescriptions','rx'+hash);
   const existing=await getDoc(ref);
@@ -95,7 +96,7 @@ window.historyCloud={
    if(data.saved||data.favorite||!data.expiresAt||data.expiresAt.toMillis()>Date.now())return ref.id;
   }
   const now=Date.now();
-  const sourceId=typeof record.editedFrom==='string'?record.editedFrom:'';
+  const sourceId=typeof record.editedFrom==='string'&&record.editedFrom!==ref.id?record.editedFrom:'';
   await setDoc(ref,{...record,edited:Boolean(sourceId),editedFrom:sourceId,saved:false,favorite:false,createdAt:serverTimestamp(),expiresAt:new Date(now+24*60*60*1000)},{merge:false});
   return ref.id;
  },
