@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediScript Pro | A4 Print & Download</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --primary: #0f766e;
+    --primary-light: #ccfbf1;
+    --primary-bg: #f0fdfa;
+    --text-dark: #0f172a;
+    --text-muted: #64748b;
+    --border: #cbd5e1;
+    --bg: #e2e8f0;
+    --accent: #0284c7;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Poppins', sans-serif; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
+
+  /* ================= LEFT PANEL (FORM) ================= */
+  .form-panel { width: 50%; min-width: 440px; background: #ffffff; padding: 25px; overflow-y: auto; box-shadow: 5px 0 25px rgba(0,0,0,0.05); z-index: 10; }
+
+  .panel-header { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(15, 118, 110, 0.3); }
+  .panel-header h2 { font-size: 22px; font-weight: 700; margin-bottom: 5px; letter-spacing: 0.5px; }
+  .panel-header p { font-size: 12px; opacity: 0.9; }
+
+  .section-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: 0.3s; }
+  .section-card:hover { border-color: var(--primary-light); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .section-title { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 1px;}
+
+  .form-group { margin-bottom: 15px; }
+  label { display: block; font-size: 11px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
+  input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: 'Poppins', sans-serif; font-size: 13px; transition: 0.3s; background: #f8fafc; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px var(--primary-light); }
+  textarea { resize: vertical; min-height: 60px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+
+  input, select, textarea { color: #0f172a; -webkit-text-fill-color: #0f172a; opacity: 1; }
+  input:disabled, select:disabled { color: #0f172a; -webkit-text-fill-color: #0f172a; }
+  input::placeholder, textarea::placeholder { color: #94a3b8; -webkit-text-fill-color: #94a3b8; opacity: 1; }
+  .btn, .btn-sm { -webkit-text-fill-color: currentColor; }
+  .toggle-group input[type="radio"]:checked + label { -webkit-text-fill-color: #fff; }
+
+  .form-panel, .preview-panel { -webkit-overflow-scrolling: touch; }
+
+  /* Buttons */
+  .btn { background: var(--primary); color: #fff; border: none; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; width: 100%; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+  .btn:hover { background: #115e59; transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; width: auto; margin: 0; background: #e2e8f0; color: var(--text-dark); box-shadow: none; }
+  .btn-sm:hover { background: #cbd5e1; color: var(--text-dark); transform: none; }
+  .btn-accent { background: var(--accent); }
+  .btn-accent:hover { background: #0369a1; }
+
+  /* Custom UI Elements */
+  .toggle-group { display: flex; background: #f1f5f9; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .toggle-group input[type="radio"] { display: none; }
+  .toggle-group label { flex: 1; text-align: center; padding: 8px; margin: 0; font-size: 12px; cursor: pointer; transition: 0.2s; }
+  .toggle-group input[type="radio"]:checked + label { background: var(--primary); color: white; }
+
+  .checkbox-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
+  .checkbox-wrap label { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; margin: 0; }
+  .checkbox-wrap input { accent-color: var(--primary); }
+
+  /* Searchable Dropdown */
+  .search-box { position: relative; }
+  .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  .search-results div { padding: 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+  .search-results div:hover { background: var(--primary-bg); color: var(--primary); font-weight: 600; }
+  .selected-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .tag { background: var(--primary-light); color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+  .tag span { cursor: pointer; color: #ef4444; font-weight: bold; }
+
+  /* Conditional sub-menus */
+  .sub-menu { background: #fff; border-left: 3px solid var(--primary); padding: 10px 15px; margin-top: 10px; border-radius: 0 8px 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: none; }
+
+  /* Medicine Builder */
+  .med-item { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-bottom: 15px; position: relative; }
+  .remove-med { position: absolute; top: 15px; right: 15px; color: #ef4444; cursor: pointer; font-weight: bold; border: none; background: none; font-size: 18px; }
+
+  /* ================= RIGHT PANEL (PREVIEW) ================= */
+  .preview-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; padding: 30px 20px; overflow-y: auto; overflow-x: hidden; position: relative; }
+  .page-scaler { position: relative; flex-shrink: 0; margin-bottom: 25px; }
+  .page-scaler .a4-paper { transform-origin: top left; margin-bottom: 0; }
+
+  /* Strict A4 Paper */
+  .a4-paper {
+    background: #ffffff; width: 794px; height: 1123px; flex-shrink: 0;
+    padding: 45px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15); position: relative;
+    font-family: 'Poppins', 'Hind Siliguri', sans-serif; color: var(--text-dark);
+    overflow: hidden; border-radius: 4px;
+    display: flex; flex-direction: column;
+    margin-bottom: 25px;
+  }
+
+  /* Page 2 (overflow) style: no header, divider, left side empty */
+  .a4-paper.page2 { page-break-before: always; }
+  .page2 .content-wrapper { height: 100%; }
+  .page2-body { display: flex; flex: 1; overflow: hidden; padding-top: 10px; }
+  .page2-left { flex: 3; border-right: 1px solid #e2e8f0; padding-right: 10px; }
+  .page2-right { flex: 7; padding-left: 15px; font-size: 11px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+
+  /* Hospital logo centred in the right (Rx) body */
+  .rx-logo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0.08; pointer-events: none; z-index: 0; }
+  .rx-logo svg { width: 300px; height: 300px; }
+  .right-col > *:not(.rx-logo), .page2-right > *:not(.rx-logo) { position: relative; z-index: 1; }
+
+  .content-wrapper { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%; }
+
+  /* Header Design */
+  .header { display: flex; justify-content: space-between; align-items: stretch; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 12px; }
+  .header-left { flex: 1; padding-right: 15px; }
+  .header-left h1 { font-size: 16px; color: var(--primary); margin-bottom: 2px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-left p { font-size: 10px; color: #334155; line-height: 1.3; font-weight: 500; }
+  .header-divider { width: 2px; background: linear-gradient(to bottom, transparent, var(--primary), transparent); margin: 0 15px; }
+  .header-right { flex: 1; display: flex; align-items: center; gap: 12px; }
+  .hospital-logo svg { width: 40px; height: 40px; }
+  .hospital-info h2 { font-size: 16px; color: var(--accent); margin-bottom: 2px; font-weight: 700; }
+  .hospital-info p { font-size: 10px; color: #475569; line-height: 1.2; }
+
+  /* Patient Bar */
+  .patient-bar { display: flex; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid var(--border); padding: 8px 0; margin-bottom: 15px; font-size: 11px; font-weight: 600; color: #1e293b; }
+  .patient-bar span { color: var(--primary); font-weight: 700; }
+
+  /* 30:70 Layout */
+  .content-area { display: flex; flex: 1; gap: 15px; overflow: hidden; }
+
+  /* Left Column (Clinical) - 30% */
+  .left-col { flex: 3; padding-right: 10px; font-size: 10px; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px; }
+  .clinical-title { font-weight: 700; color: var(--primary); margin-bottom: 2px; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; }
+  .clinical-text { color: #334155; line-height: 1.3; }
+  .clinical-text span { font-weight: 600; color: #0f172a; }
+  .clinical-list { list-style-type: disc; padding-left: 12px; color: #334155; line-height: 1.3; }
+
+  /* Right Column (Rx) - 70% */
+  .right-col { flex: 7; display: flex; flex-direction: column; font-size: 11px; overflow: hidden; position: relative; }
+  .rx-symbol { font-size: 26px; font-weight: bold; color: var(--primary); margin-bottom: 10px; font-family: serif; line-height: 1; }
+
+  /* Unified Table for Care & Meds */
+  .med-table { width: 100%; border-collapse: collapse; }
+  .med-table td { padding: 6px 4px; border-bottom: 1px dashed #cbd5e1; vertical-align: top; }
+  .med-table td:first-child { width: 20px; font-weight: bold; color: var(--primary); }
+  .med-title { font-weight: 700; color: #0f172a; font-size: 12px; margin-bottom: 2px; }
+  .med-details { color: #475569; font-size: 11px; }
+
+  /* Special Instructions */
+  .special-inst { margin-top: 15px; font-weight: 700; color: #b91c1c; font-size: 12px; }
+  .special-inst div { margin-bottom: 3px; }
+
+  /* Advice */
+  .advice-section { margin-top: auto; padding-top: 15px; }
+  .advice-inner { background: var(--primary-bg); padding: 10px; border-radius: 6px; border-left: 3px solid var(--primary); }
+  .advice-title { font-weight: 700; color: var(--primary); margin-bottom: 3px; font-size: 10px; text-transform: uppercase; }
+  .advice-text { font-size: 11px; white-space: pre-wrap; color: #334155; }
+
+  /* Footer & Signature (Pinned to Bottom) */
+  .footer-container { margin-top: auto; padding-top: 10px; width: 100%; }
+  .signature-box { text-align: right; margin-bottom: 10px; padding-right: 10px; }
+  .signature-line { width: 150px; border-bottom: 1px solid #333; margin-bottom: 3px; display: inline-block; }
+  .signature-text { font-size: 10px; font-weight: 600; color: #334155; }
+
+  .footer { border-top: 2px solid var(--primary); padding-top: 8px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 9px; color: #64748b; gap: 15px; }
+  .footer strong { color: var(--primary); }
+  .footer-quote { flex: 1; text-align: center; font-style: italic; color: var(--primary); font-size: 9.5px; padding: 0 10px; line-height: 1.3; }
+  .footer-left, .footer-right { flex: 0 0 auto; }
+
+  /* ===== Responsive: phones, tablets, laptops, desktops ===== */
+  html { -webkit-text-size-adjust: 100%; }
+  input, select, textarea { font-size: 16px; } /* prevents zoom-on-focus on mobile */
+  @media (max-width: 900px) {
+    body { flex-direction: column; height: auto; min-height: 100vh; overflow: auto; }
+    .form-panel { width: 100%; min-width: 0; overflow: visible; padding: 15px; box-shadow: none; }
+    .preview-panel { width: 100%; flex: none; overflow: visible; padding: 15px 8px 30px; background: var(--bg); }
+    .section-card { padding: 15px; }
+    .row { gap: 10px; }
+  }
+  @media (max-width: 520px) {
+    .row, .row-3 { grid-template-columns: 1fr; gap: 0; }
+    .row .form-group, .row-3 .form-group { margin-bottom: 15px; }
+    .checkbox-wrap label { font-size: 13px; }
+    .btn { padding: 14px 20px; }
+  }
+
+  /* Auto-fit density: keeps 12 medicines + care rows + advice inside one A4 page */
+  .a4-paper[data-density="1"] .med-table td { padding: 4px 4px; }
+  .a4-paper[data-density="1"] .rx-symbol { font-size: 22px; margin-bottom: 6px; }
+  .a4-paper[data-density="1"] .special-inst { margin-top: 8px; }
+  .a4-paper[data-density="1"] .advice-section { padding-top: 8px; }
+  .a4-paper[data-density="2"] .med-table td { padding: 3px 4px; }
+  .a4-paper[data-density="2"] .rx-symbol { font-size: 20px; margin-bottom: 4px; }
+  .a4-paper[data-density="2"] .special-inst { margin-top: 6px; font-size: 11px; }
+  .a4-paper[data-density="2"] .advice-section { padding-top: 6px; }
+  .a4-paper[data-density="2"] .advice-inner { padding: 6px 8px; }
+  .a4-paper[data-density="2"] .med-title { font-size: 11px; margin-bottom: 1px; }
+  .a4-paper[data-density="2"] .med-details { font-size: 10px; }
+  .a4-paper[data-density="2"] .left-col { font-size: 9.5px; gap: 5px; }
+  .a4-paper[data-density="3"] .med-table td { padding: 2px 4px; }
+  .a4-paper[data-density="3"] .rx-symbol { font-size: 18px; margin-bottom: 3px; }
+  .a4-paper[data-density="3"] .special-inst { margin-top: 4px; font-size: 10.5px; }
+  .a4-paper[data-density="3"] .advice-section { padding-top: 4px; }
+  .a4-paper[data-density="3"] .advice-inner { padding: 5px 7px; }
+  .a4-paper[data-density="3"] .advice-text { font-size: 10px; }
+  .a4-paper[data-density="3"] .med-title { font-size: 10.5px; margin-bottom: 0; }
+  .a4-paper[data-density="3"] .med-details { font-size: 9.5px; }
+  .a4-paper[data-density="3"] .left-col { font-size: 9px; gap: 4px; }
+  .a4-paper[data-density="4"] .med-table td { padding: 1px 4px; }
+  .a4-paper[data-density="4"] .med-title { font-size: 10px; }
+  .a4-paper[data-density="4"] .med-details { font-size: 9px; }
+  .a4-paper[data-density="4"] .left-col { font-size: 8.5px; gap: 3px; }
+  .a4-paper[data-density="4"] .advice-text { font-size: 9.5px; }
+  .a4-paper[data-density="4"] .special-inst { font-size: 10px; }
+
+  /* Print Settings */
+  @media print {
+    body { background: #fff; overflow: visible; display: block; height: auto; }
+    .form-panel { display: none; }
+    .preview-panel { padding: 0; display: block; overflow: visible; }
+    .page-scaler { width: auto !important; height: auto !important; margin: 0; }
+    .a4-paper { transform: none !important; box-shadow: none; width: 210mm; height: 297mm; margin: 0; }
+    @page { size: A4; margin: 0; }
+  }
+
+  /* iOS download helper overlay */
+  .ios-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+  .ios-overlay.active { display: flex; }
+  .ios-overlay .box { background: #fff; padding: 24px; border-radius: 14px; max-width: 420px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .ios-overlay .box h3 { color: var(--primary); margin-bottom: 10px; font-size: 16px; }
+  .ios-overlay .box p { font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 16px; }
+  .ios-overlay .box a { display: inline-block; background: var(--primary); color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px; margin-top: 6px; }
+  .ios-overlay .box button { background: #e2e8f0; color: #0f172a; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; margin-top: 10px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- ================= LEFT PANEL: INPUTS ================= -->
+<div class="form-panel">
+
+  <div class="panel-header">
+    <h2>MediScript Pro</h2>
+    <p>Ultimate e-Prescription System</p>
+  </div>
+
+  <!-- PROFILE SECTION -->
+  <div class="section-card">
+    <div class="section-title">
+      Doctor & Chamber Profile
+      <button class="btn btn-sm" onclick="saveProfile()">💾 Save as Default</button>
+    </div>
+    <div class="row">
+      <div class="form-group"><label>Doctor Name</label><input type="text" id="dName" placeholder="Dr. Name" oninput="updatePreview()"></div>
+      <div class="form-group"><label>Reg No</label><input type="text" id="dReg" placeholder="Reg No" oninput="updatePreview()"></div>
+    </div>
+    <div class="form-group"><label>Degrees & Title</label><textarea id="dDegrees" style="min-height:45px" placeholder="MBBS, MD..." oninput="updatePreview()"></textarea></div>
+    <div class="row">
+      <div class="form-group"><label>Phone No</label><input type="text" id="dPhone" placeholder="Phone" oninput="updatePreview()"></div>
+      <div class="form-group"><label>Email</label><input type="text" id="dEmail" placeholder="Email" oninput="updatePreview()"></div>
+    </div>
+    <div class="row">
+      <div class="form-group"><label>Hospital/Chamber</label><input type="text" id="cHospital" placeholder="Hospital Name" oninput="updatePreview()"></div>
+      <div class="form-group"><label>Location</label><input type="text" id="cLocation" placeholder="Location" oninput="updatePreview()"></div>
+    </div>
+  </div>
+
+  <!-- PATIENT SECTION -->
+  <div class="section-card">
+    <div class="section-title">Patient Profile</div>
+    <div class="row-3">
+      <div class="form-group"><label>Name</label><input type="text" id="pName" placeholder="Patient Name" oninput="updatePreview()"></div>
+      <div class="form-group"><label>Sex</label><select id="pSex" onchange="updatePreview()"><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+      <div class="form-group"><label>Age</label><input type="text" id="pAge" placeholder="e.g. 45" oninput="updatePreview()"></div>
+    </div>
+    <div class="row">
+      <div class="form-group"><label>Weight (kg)</label><input type="number" id="pWeight" placeholder="e.g. 70" oninput="updatePreview()"></div>
+      <div class="form-group"><label>Phone No</label><input type="text" id="pPhone" placeholder="Patient Phone" oninput="updatePreview()"></div>
+    </div>
+  </div>
+
+  <!-- CLINICAL HISTORY -->
+  <div class="section-card">
+    <div class="section-title">Clinical History</div>
+    <div class="form-group"><label>Chief Complaints (One per line)</label><textarea id="cChief" placeholder="Fever for 3 days&#10;Headache" oninput="updatePreview()"></textarea></div>
+
+    <label>Risk Factors</label>
+    <div class="row" style="margin-bottom:15px;">
+      <div class="form-group" style="margin:0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-size:11px; font-weight:600;">DM</span>
+          <div class="toggle-group" style="width:100px;">
+            <input type="radio" name="rDm" id="dmPos" value="Positive" onchange="updatePreview()"><label for="dmPos">Pos</label>
+            <input type="radio" name="rDm" id="dmNeg" value="Negative" onchange="updatePreview()" checked><label for="dmNeg">Neg</label>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11px; font-weight:600;">HTN</span>
+          <div class="toggle-group" style="width:100px;">
+            <input type="radio" name="rHtn" id="htnPos" value="Positive" onchange="updatePreview()"><label for="htnPos">Pos</label>
+            <input type="radio" name="rHtn" id="htnNeg" value="Negative" onchange="updatePreview()" checked><label for="htnNeg">Neg</label>
+          </div>
+        </div>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-size:11px; font-weight:600;">BA (Asthma)</span>
+          <div class="toggle-group" style="width:100px;">
+            <input type="radio" name="rBa" id="baPos" value="Positive" onchange="updatePreview()"><label for="baPos">Pos</label>
+            <input type="radio" name="rBa" id="baNeg" value="Negative" onchange="updatePreview()" checked><label for="baNeg">Neg</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group"><label>H/O Past Illness</label><textarea id="cPast" style="min-height:40px" oninput="updatePreview()"></textarea></div>
+      <div class="form-group"><label>Drug History</label><textarea id="cDrug" style="min-height:40px" oninput="updatePreview()"></textarea></div>
+    </div>
+    <div class="row">
+      <div class="form-group"><label>Allergy History</label><textarea id="cAllergy" style="min-height:40px" oninput="updatePreview()"></textarea></div>
+      <div class="form-group"><label>Family History</label><textarea id="cFamily" style="min-height:40px" oninput="updatePreview()"></textarea></div>
+    </div>
+    <div class="form-group" style="margin-top:15px;">
+      <label>Personal History</label>
+      <textarea id="cPersonal" style="min-height:40px" oninput="updatePreview()"></textarea>
+    </div>
+  </div>
+
+  <!-- ON EXAMINATION -->
+  <div class="section-card">
+    <div class="section-title">On Examination</div>
+
+    <label>Vitals</label>
+    <div class="row-3" style="margin-bottom:15px;">
+      <div class="form-group" style="margin:0;">
+        <label style="font-size:10px; color:var(--text-muted)">BP (Systolic/Diastolic)</label>
+        <div style="display:flex; gap:5px; align-items:center;">
+          <input type="number" id="bpSys" placeholder="120" oninput="updatePreview()">
+          <span>/</span>
+          <input type="number" id="bpDia" placeholder="80" oninput="updatePreview()">
+        </div>
+      </div>
+      <div class="form-group" style="margin:0;"><label style="font-size:10px; color:var(--text-muted)">Pulse (bpm)</label><input type="number" id="ePulse" placeholder="72" oninput="updatePreview()"></div>
+      <div class="form-group" style="margin:0;"><label style="font-size:10px; color:var(--text-muted)">SpO2 (%)</label><input type="number" id="eSpo2" placeholder="98" oninput="updatePreview()"></div>
+    </div>
+    <div class="form-group"><label style="font-size:10px; color:var(--text-muted)">Temp (°F)</label><input type="number" id="eTemp" placeholder="98.6" oninput="updatePreview()" style="width:50%"></div>
+
+    <div class="form-group">
+      <label>Others (O/G/E)</label>
+      <div class="checkbox-wrap">
+        <label><input type="checkbox" class="e-other" value="Anemia" onchange="updatePreview()"> Anemia</label>
+        <label><input type="checkbox" class="e-other" value="Jaundice" onchange="updatePreview()"> Jaundice</label>
+        <label><input type="checkbox" class="e-other" value="Cyanosis" onchange="updatePreview()"> Cyanosis</label>
+        <label><input type="checkbox" class="e-other" value="Clubbing" onchange="updatePreview()"> Clubbing</label>
+        <label><input type="checkbox" class="e-other" value="Koilonychia" onchange="updatePreview()"> Koilonychia</label>
+        <label><input type="checkbox" class="e-other" value="Leukonychia" onchange="updatePreview()"> Leukonychia</label>
+        <label><input type="checkbox" class="e-other" value="Oedema" onchange="updatePreview()"> Oedema</label>
+        <label><input type="checkbox" class="e-other" value="Dehydration" onchange="updatePreview()"> Dehydration</label>
+        <label><input type="checkbox" class="e-other" value="Lymphadenopathy" onchange="updatePreview()"> Lymphadenopathy</label>
+        <label><input type="checkbox" class="e-other" value="JVP" onchange="updatePreview()"> JVP</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- O/S/E SYSTEMS -->
+  <div class="section-card">
+    <div class="section-title">O/S/E</div>
+
+    <!-- Respiratory -->
+    <div class="form-group">
+      <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="sysResp" onchange="toggleSystem('resp', this.checked); updatePreview()"> Respiratory System</label>
+      <div id="sub-resp" class="sub-menu">
+        <div class="form-group">
+          <label>Breath Sound</label>
+          <select id="rsBreath" onchange="updatePreview()">
+            <option value="Vesicular">Vesicular</option>
+            <option value="Bronchial">Bronchial</option>
+            <option value="Diminished">Diminished</option>
+          </select>
+        </div>
+        <label>Added Sound</label>
+        <div class="row">
+          <div class="form-group" style="margin:0;">
+            <label>Crepitation</label>
+            <select id="rsCrep" onchange="updatePreview()"><option value="Present">Present</option><option value="Absent">Absent</option></select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Rhonchi</label>
+            <select id="rsRhon" onchange="updatePreview()"><option value="Present">Present</option><option value="Absent">Absent</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cardiovascular -->
+    <div class="form-group">
+      <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="sysCardio" onchange="toggleSystem('cardio', this.checked); updatePreview()"> Cardiovascular System</label>
+      <div id="sub-cardio" class="sub-menu">
+        <div class="form-group">
+          <label>Heart Sound</label>
+          <div class="checkbox-wrap">
+            <label><input type="checkbox" class="hs" value="S1" onchange="updatePreview()"> S1</label>
+            <label><input type="checkbox" class="hs" value="S2" onchange="updatePreview()"> S2</label>
+            <label><input type="checkbox" class="hs" value="S3" onchange="updatePreview()"> S3</label>
+            <label><input type="checkbox" class="hs" value="S4" onchange="updatePreview()"> S4</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Murmur</label>
+          <select id="cvMurmur" onchange="toggleMurmur()">
+            <option value="None">None</option>
+            <option value="Systolic">Systolic</option>
+            <option value="Diastolic">Diastolic</option>
+            <option value="Continuous">Continuous</option>
+          </select>
+          <div id="murmurSys" style="display:none; margin-top:5px;">
+            <select id="cvMurmurSysType" onchange="updatePreview()"><option value="Ejection">Ejection</option><option value="Pansystolic">Pansystolic</option></select>
+          </div>
+          <div id="murmurDia" style="display:none; margin-top:5px;">
+            <select id="cvMurmurDiaType" onchange="updatePreview()"><option value="Early">Early</option><option value="Mid">Mid</option></select>
+          </div>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Added Sound</label>
+          <select id="cvAdded" onchange="updatePreview()">
+            <option value="None">None</option>
+            <option value="Click">Click</option>
+            <option value="Snap">Snap</option>
+            <option value="Others">Others</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nervous -->
+    <div class="form-group">
+      <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" id="sysNervous" onchange="toggleSystem('nervous', this.checked); updatePreview()"> Nervous System</label>
+      <div id="sub-nervous" class="sub-menu">
+        <div class="row">
+          <div class="form-group" style="margin:0;">
+            <label>Tone</label>
+            <select id="nsTone" onchange="updatePreview()"><option value="Normal">Normal</option><option value="Hypertonic">Hypertonic</option><option value="Hypotonic">Hypotonic</option></select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Power</label>
+            <select id="nsPower" onchange="updatePreview()">
+              <option value="0/6">0/6</option><option value="1/6">1/6</option><option value="2/6">2/6</option><option value="3/6">3/6</option><option value="4/6">4/6</option><option value="5/6" selected>5/6</option><option value="6/6">6/6</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="form-group" style="margin:0;">
+            <label>Jerk</label>
+            <select id="nsJerk" onchange="updatePreview()"><option value="Normal">Normal</option><option value="Exaggerated">Exaggerated</option><option value="Diminished">Diminished</option></select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Plantar</label>
+            <select id="nsPlantar" onchange="updatePreview()"><option value="Flexor">Flexor</option><option value="Extensor">Extensor</option><option value="Absent">Absent</option><option value="Equivocal">Equivocal</option><option value="Withdrawal">Withdrawal</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group"><label>O/L/E (Optional)</label><textarea id="eOLE" style="min-height:40px" oninput="updatePreview()"></textarea></div>
+  </div>
+
+  <!-- INVESTIGATIONS, PROVISIONAL & D/DX -->
+  <div class="section-card">
+    <div class="section-title">Diagnosis & Investigations</div>
+
+    <div class="form-group search-box">
+      <label>Investigations (Search to add)</label>
+      <input type="text" id="invSearch" placeholder="Search e.g. CBC, Troponin I, Dengue NS1..." oninput="searchInvestigations()" autocomplete="off">
+      <div id="invResults" class="search-results"></div>
+    </div>
+    <div class="selected-tags" id="invTags" style="margin-bottom:15px;"></div>
+
+    <div class="form-group">
+      <label>Provisional Diagnosis</label>
+      <input type="text" id="provDx" placeholder="Type provisional diagnosis..." oninput="updatePreview()">
+    </div>
+
+    <div class="form-group">
+      <label>D/Dx (Differential Diagnosis)</label>
+      <input type="text" id="dDx" placeholder="Type differential diagnosis..." oninput="updatePreview()">
+    </div>
+  </div>
+
+  <!-- MANAGEMENT & CARE -->
+  <div class="section-card">
+    <div class="section-title">Management & Care</div>
+
+    <div class="form-group">
+      <label>Diet</label>
+      <select id="careDiet" onchange="toggleDietOthers(); updatePreview()">
+        <option value="Normal">Normal</option>
+        <option value="Soft to liquid">Soft to liquid</option>
+        <option value="NPO TFO">NPO TFO</option>
+        <option value="Others">Others...</option>
+      </select>
+      <div id="dietOthersBox" style="display:none; margin-top:5px;">
+        <input type="text" id="careDietOthers" placeholder="Type custom diet..." oninput="updatePreview()">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>O2 Inhalation (L/min)</label>
+        <input type="text" id="careO2" placeholder="e.g. 5-6" oninput="updatePreview()">
+      </div>
+      <div class="form-group" style="display:flex; align-items:center; margin-top:20px;">
+        <label style="margin:0; display:flex; gap:8px; align-items:center; font-size:13px; text-transform:none;">
+          <input type="checkbox" id="careCBR" onchange="updatePreview()" style="width:18px; height:18px; accent-color:var(--primary);"> Complete Bed Rest
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Positioning</label>
+      <select id="carePos" onchange="updatePreview()">
+        <option value="">None</option>
+        <option value="Supine position">Supine position</option>
+        <option value="Prone position">Prone position</option>
+        <option value="Lateral position">Lateral position</option>
+        <option value="Fowler's position">Fowler's position</option>
+        <option value="Semi-Fowler's position">Semi-Fowler's position</option>
+        <option value="High Fowler's position">High Fowler's position</option>
+        <option value="Propped up position">Propped up position</option>
+        <option value="Trendelenburg position">Trendelenburg position</option>
+        <option value="Lithotomy position">Lithotomy position</option>
+        <option value="Sim's position">Sim's position</option>
+        <option value="Orthopneic position">Orthopneic position</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- MEDICINES -->
+  <div class="section-card">
+    <div class="section-title">Medicines (Rx)</div>
+    <div id="med-container"></div>
+    <button class="btn btn-accent" onclick="addMedicine()">+ Add Medicine</button>
+  </div>
+
+  <!-- SPECIAL INSTRUCTIONS -->
+  <div class="section-card">
+    <div class="section-title">Special Instructions</div>
+    <div class="checkbox-wrap" style="flex-direction: column; align-items: flex-start;">
+      <label style="width: 100%;"><input type="checkbox" id="instCath" onchange="updatePreview()"> Continuous Catheterisation</label>
+      <label style="width: 100%;"><input type="checkbox" id="instHosp" onchange="updatePreview()"> Urgent Hospitalisation</label>
+      <label style="width: 100%;"><input type="checkbox" id="instRef" onchange="toggleReferral(); updatePreview()"> Referred to...</label>
+    </div>
+    <div id="referralBox" style="display:none; margin-top:10px;">
+      <input type="text" id="instRefText" placeholder="Type referral destination..." oninput="updatePreview()">
+    </div>
+  </div>
+
+  <!-- ADVICE -->
+  <div class="section-card">
+    <div class="section-title">Advice</div>
+    <textarea id="advice" placeholder="Rest, plenty of fluids..." oninput="updatePreview()" style="min-height:80px;"></textarea>
+  </div>
+
+  <!-- ACTION BUTTONS -->
+  <div style="display:flex; gap:10px; margin-bottom:50px;">
+    <button class="btn" id="btnDownload" onclick="downloadPDF()" style="background:#0f766e; font-size:15px; padding:15px; flex:1;">
+      📥 Print & Download
+    </button>
+  </div>
+</div>
+
+<!-- ================= RIGHT PANEL: LIVE PREVIEW ================= -->
+<div class="preview-panel" id="previewPanel"></div>
+
+<script>
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const HEALING_QUOTE = '"Healing is a matter of time, but it is sometimes also a matter of opportunity. May you recover swiftly and wholly."';
+
+  let medCount = 0;
+  let selectedInvestigations = [];
+
+  /* ===== INVESTIGATION MASTER LIST ===== */
+  const allInvestigations = [
+    // Hematology
+    "CBC", "Hb", "PCV", "MCV", "MCH", "MCHC", "RDW", "Total WBC Count", "Differential Count", "Platelet Count",
+    "ESR", "Reticulocyte Count", "Blood Film for Malaria", "Blood Film for MP", "Blood Film for Microfilaria",
+    "PT/INR", "APTT", "Bleeding Time", "Clotting Time", "D-Dimer", "Fibrinogen", "Blood Grouping & Rh",
+    "Direct Coombs Test", "Indirect Coombs Test", "G6PD Assay", "Hb Electrophoresis", "Sickling Test",
+    "Bone Marrow Aspiration", "Bone Marrow Biopsy", "Anti-Phospholipid Antibody", "Lupus Anticoagulant",
+    // Biochemistry
+    "RBS", "FBS", "2HABF", "HbA1C", "OGTT", "Fasting Insulin", "S. Creatinine", "S. Urea", "BUN",
+    "S. Electrolytes", "S. Sodium", "S. Potassium", "S. Chloride", "S. Bicarbonate", "S. Calcium",
+    "Ionized Calcium", "S. Magnesium", "S. Phosphate", "S. Uric Acid", "S. Total Protein", "S. Albumin",
+    "S. Globulin", "A/G Ratio", "S. Bilirubin (Total)", "S. Bilirubin (Direct)", "S. Bilirubin (Indirect)",
+    "SGPT (ALT)", "SGOT (AST)", "ALP", "GGT", "LDH", "CPK", "CPK-MB", "Troponin I", "Troponin T",
+    "hs-CRP", "CRP", "Procalcitonin", "S. Amylase", "S. Lipase", "S. TSH", "FT3", "FT4", "Anti-TPO",
+    "Serum Cortisol", "ACTH", "PTH", "Vitamin D (25-OH)", "Vitamin B12", "Serum Ferritin", "Serum Iron",
+    "TIBC", "Transferrin Saturation", "Serum Folate", "Homocysteine", "Serum Lactate", "Serum Ammonia",
+    "Lipid Profile", "Total Cholesterol", "Triglycerides", "HDL", "LDL", "VLDL", "Non-HDL Cholesterol",
+    "Apolipoprotein A1", "Apolipoprotein B", "Lipoprotein (a)",
+    // Cardiac
+    "ECG", "Echo 2D/Doppler", "Stress ECG (TMT)", "Holter Monitoring (24h)", "Exercise Stress Test",
+    "Myocardial Perfusion Scan", "Coronary Angiography", "CT Coronary Angiography", "Cardiac MRI",
+    "BNP", "NT-proBNP", "CK-MB", "Myoglobin", "Serum Homocysteine (Cardiac)", "Lipoprotein (a) (Cardiac)",
+    "Aortic Root Measurement", "Carotid Doppler", "Ankle Brachial Index",
+    // Renal
+    "Urine R/M/E", "Urine C/S", "Urine ACR", "24h Urine Protein", "Urine Protein Electrophoresis",
+    "Urine Ketone Body", "Urine Sugar", "Urine Albumin", "Urine Bilirubin", "Urine Urobilinogen",
+    "Urine pH", "Urine Specific Gravity", "Urine Microscopy", "Renal Function Test (RFT)", "eGFR",
+    "S. Cystatin C", "Renal Ultrasound", "Renal Doppler", "IVU", "MCU", "DTPA Scan",
+    // Liver / GI
+    "LFT", "HBsAg", "Anti-HCV", "Anti-HAV IgM", "Anti-HAV IgG", "Anti-HEV IgM", "Anti-HEV IgG",
+    "HBeAg", "Anti-HBe", "HBV DNA PCR", "HCV RNA PCR", "Serum Ceruloplasmin", "Serum Alpha-1 Antitrypsin",
+    "Anti-Smooth Muscle Antibody", "Anti-Mitochondrial Antibody", "Anti-LKM Antibody", "ANA (Liver)",
+    "Stool R/M/E", "Stool OBT", "Stool C/S", "Stool for Ova & Cyst", "Stool for Reducing Substance",
+    "H. pylori Stool Antigen", "H. pylori Urea Breath Test", "Upper GI Endoscopy", "Colonoscopy",
+    "Sigmoidoscopy", "ERCP", "MRCP", "Abdominal Ultrasound", "Abdominal CT", "Abdominal MRI",
+    // Endocrine
+    "S. Testosterone", "S. Estradiol", "S. Progesterone", "FSH", "LH", "Prolactin", "Serum GH",
+    "IGF-1", "Serum Aldosterone", "Plasma Renin Activity", "24h Urine Metanephrines", "Serum Metanephrines",
+    "Serum Cortisol (AM)", "Serum Cortisol (PM)", "Dexamethasone Suppression Test", "ACTH Stimulation Test",
+    "Thyroid Ultrasound", "Thyroid Scan", "FNAC Thyroid", "Serum Thyroglobulin", "Anti-Thyroglobulin Antibody",
+    // Infection / Serology
+    "Dengue NS1 Antigen", "Dengue IgM", "Dengue IgG", "Dengue IgM/IgG Combo", "Widal Test", "Typhidot",
+    "Malaria Antigen (Pf/Pv)", "Malaria Antibody", "Leptospira IgM", "Scrub Typhus IgM", "Chikungunya IgM",
+    "Chikungunya PCR", "Japanese Encephalitis IgM", "Brucella Agglutination", "Brucella IgM", "Brucella IgG",
+    "HIV 1 & 2 Antibody", "HIV Viral Load", "CD4 Count", "VDRL", "TPHA", "Herpes Simplex IgM",
+    "Herpes Simplex IgG", "CMV IgM", "CMV IgG", "EBV IgM", "EBV IgG", "Toxoplasma IgM", "Toxoplasma IgG",
+    "Rubella IgM", "Rubella IgG", "Measles IgM", "Mumps IgM", "COVID-19 RT-PCR", "COVID-19 Antigen",
+    "COVID-19 Antibody (IgG)", "Influenza A/B PCR", "RSV Antigen", "Blood C/S", "Urine C/S (Repeat)",
+    "Sputum C/S", "Throat Swab C/S", "CSF C/S", "Wound Swab C/S", "Pus C/S", "Stool C/S (Repeat)",
+    // Immunology / Autoimmune
+    "ANA", "Anti-dsDNA", "Anti-Sm", "Anti-Ro (SSA)", "Anti-La (SSB)", "Anti-RNP", "Anti-Scl-70",
+    "Anti-Jo-1", "Anti-Centromere", "Anti-Histone", "RA Factor", "Anti-CCP", "HLA-B27", "C3", "C4",
+    "CH50", "ANCA (c-ANCA)", "ANCA (p-ANCA)", "Anti-GBM Antibody", "Anti-TTG IgA", "Anti-TTG IgG",
+    "Anti-Endomysial Antibody", "Total IgE", "Specific IgE (Allergen Panel)", "Serum IgG Subclasses",
+    "Serum IgA", "Serum IgM", "Serum IgG", "Serum IgD",
+    // Tumor Markers
+    "AFP", "CEA", "CA 19-9", "CA 125", "CA 15-3", "CA 27-29", "PSA (Total)", "PSA (Free)", "Beta-hCG",
+    "Calcitonin", "Thyroglobulin (Tumor Marker)", "NSE", "Chromogranin A", "LDH (Tumor Marker)",
+    "Beta-2 Microglobulin", "Serum Protein Electrophoresis", "Urine Bence Jones Protein",
+    // Imaging
+    "CXR (P/A)", "CXR (Lateral)", "CXR (Both Views)", "CT Scan Brain", "MRI Brain", "MRV Brain",
+    "CT Scan Chest", "HRCT Chest", "MRI Chest", "CT Scan Abdomen", "MRI Abdomen", "CT Scan KUB",
+    "USG of Whole Abdomen", "USG of KUB", "USG of Pelvis", "USG of Hepatobiliary System",
+    "USG of Thyroid", "USG of Breast", "USG of Scrotum", "USG Guided FNAC", "Mammography",
+    "MRI Spine (Cervical)", "MRI Spine (Thoracic)", "MRI Spine (Lumbar)", "CT Myelogram",
+    "X-ray Skull", "X-ray Spine", "X-ray Pelvis", "X-ray Long Bones", "X-ray Joints",
+    "Bone Scan", "PET-CT Scan", "PET Scan", "DEXA Scan", "Sestamibi Scan",
+    // Miscellaneous
+    "Electrolyte Panel", "ABG (Arterial Blood Gas)", "Serum Osmolality", "Urine Osmolality",
+    "Serum Ketone Body", "Lactate Dehydrogenase", "Serum Cholinesterase", "Serum Ceruloplasmin (Repeat)",
+    "Sweat Chloride Test", "Skin Prick Test", "Patch Test", "Pulmonary Function Test", "DLCO",
+    "Bronchoscopy", "Bronchoalveolar Lavage", "Pleural Fluid Analysis", "Ascitic Fluid Analysis",
+    "CSF Analysis", "Synovial Fluid Analysis", "Pericardial Fluid Analysis", "Bone Density (DEXA)",
+    "EEG", "EMG", "Nerve Conduction Study", "Visual Evoked Potential", "Brainstem Auditory Evoked Potential",
+    "Semen Analysis", "Post-Coital Test", "Endometrial Biopsy", "Hysteroscopy", "Laparoscopy",
+    "Colposcopy", "Pap Smear", "HPV DNA Test", "Amniotic Fluid Analysis", "Karyotyping", "FISH Study"
+  ];
+
+
+  window.onload = function() {
+    try {
+      const saved = localStorage.getItem('mediScriptProfile');
+      if (saved) {
+        const data = JSON.parse(saved);
+        document.getElementById('dName').value = data.dName || '';
+        document.getElementById('dReg').value = data.dReg || '';
+        document.getElementById('dDegrees').value = data.dDegrees || '';
+        document.getElementById('dPhone').value = data.dPhone || '';
+        document.getElementById('dEmail').value = data.dEmail || '';
+        document.getElementById('cHospital').value = data.cHospital || '';
+        document.getElementById('cLocation').value = data.cLocation || '';
+      }
+    } catch (e) {}
+    addMedicine();
+    updatePreview();
+  };
+
+  function saveProfile() {
+    const data = {
+      dName: document.getElementById('dName').value,
+      dReg: document.getElementById('dReg').value,
+      dDegrees: document.getElementById('dDegrees').value,
+      dPhone: document.getElementById('dPhone').value,
+      dEmail: document.getElementById('dEmail').value,
+      cHospital: document.getElementById('cHospital').value,
+      cLocation: document.getElementById('cLocation').value,
+    };
+    try {
+      localStorage.setItem('mediScriptProfile', JSON.stringify(data));
+      alert('Profile saved successfully! It will auto-load next time.');
+    } catch (e) {
+      alert('Could not save profile in this browser.');
+    }
+  }
+
+  function toggleSystem(sys, isChecked) {
+    document.getElementById(`sub-${sys}`).style.display = isChecked ? 'block' : 'none';
+  }
+
+  function toggleMurmur() {
+    const val = document.getElementById('cvMurmur').value;
+    document.getElementById('murmurSys').style.display = val === 'Systolic' ? 'block' : 'none';
+    document.getElementById('murmurDia').style.display = val === 'Diastolic' ? 'block' : 'none';
+    updatePreview();
+  }
+
+  function toggleDietOthers() {
+    const val = document.getElementById('careDiet').value;
+    document.getElementById('dietOthersBox').style.display = val === 'Others' ? 'block' : 'none';
+  }
+
+  function toggleReferral() {
+    document.getElementById('referralBox').style.display = document.getElementById('instRef').checked ? 'block' : 'none';
+    updatePreview();
+  }
+
+  /* ===== MEDICINE BUILDER ===== */
+  const formulations = ["Tab", "Cap", "Inj", "Syrup", "Suspension", "Sachet", "Inhaler", "Nebuliser Solution", "Respule", "Suppository", "Pessary", "Ointment", "Cream", "Gel", "Lotion", "Eye Drops", "Ear Drops", "Nasal Drops", "Nasal Spray", "Spray", "Oral Drops", "Powder", "Lozenge", "Mouthwash", "Patch", "Saline (IV Fluid)", "Infusion"];
+  function addMedicine() {
+    medCount++;
+    const container = document.getElementById('med-container');
+    const div = document.createElement('div');
+    div.className = 'med-item';
+    div.id = `med-${medCount}`;
+    const formOptions = formulations.map(f => `<option value="${f}">${f}</option>`).join('');
+
+    const opt = arr => arr.map(v => `<option value="${v}">${v}</option>`).join('');
+    const routes = ["I/V","I/M","S/C","I/D","Intrathecal","Epidural","Intra-articular","Intravitreal","Intraperitoneal","Intraosseous","Intracardiac","Intrapleural"];
+    const schedules = ["OD","BD","TDS","QDS","HS","SOS","STAT","Q4H","Q6H","Q8H","Q12H","Weekly","Alternate day"];
+
+    div.innerHTML = `
+      <button class="remove-med" onclick="removeMedicine(${medCount})">×</button>
+      <div class="row">
+        <div class="form-group"><label>Formulation</label><select class="m-form" onchange="toggleFormMode(this)">${formOptions}</select></div>
+        <div class="form-group"><label>Drug Name</label><input type="text" class="m-name" placeholder="e.g. Paracetamol" oninput="updatePreview()"></div>
+      </div>
+
+      <!-- STANDARD layout -->
+      <div class="mode-std">
+        <div class="row">
+          <div class="form-group">
+            <label>Strength</label>
+            <div style="display:flex; gap:5px;">
+              <input type="text" class="m-strength" placeholder="e.g. 500" style="width:55%;" oninput="updatePreview()">
+              <select class="m-unit" style="width:45%;" onchange="toggleCustom(this)">${opt(["mg","g","microgram","Custom"])}</select>
+            </div>
+            <input type="text" class="u-custom m-unit-custom" placeholder="Type custom unit..." style="display:none; margin-top:5px;" oninput="updatePreview()">
+          </div>
+          <div class="form-group"><label>Dosage</label><input type="text" class="m-dosage" placeholder="e.g. 1+0+1" oninput="updatePreview()"></div>
+        </div>
+      </div>
+
+      <!-- INFUSION layout -->
+      <div class="mode-inf" style="display:none;">
+        <div class="row">
+          <div class="form-group">
+            <label>Strength</label>
+            <div style="display:flex; gap:5px;">
+              <input type="text" class="i-strength" placeholder="e.g. 500" style="width:55%;" oninput="updatePreview()">
+              <select class="i-qunit" style="width:45%;" onchange="updatePreview()">${opt(["ml","litre"])}</select>
+            </div>
+          </div>
+          <div class="form-group"><label>Dosage</label><input type="text" class="i-dosage" placeholder="e.g. 300 ml" oninput="updatePreview()"></div>
+        </div>
+        <div class="row">
+          <div class="form-group"><label>Route</label><input type="text" class="i-route" value="I/V" readonly style="background:#e2e8f0; font-weight:600; cursor:not-allowed;"></div>
+          <div class="form-group">
+            <label>Rate</label>
+            <div style="display:flex; gap:5px;">
+              <input type="number" class="i-rate" placeholder="e.g. 60" style="width:50%;" oninput="updatePreview()">
+              <select class="i-rateunit" style="width:50%;" onchange="updatePreview()">${opt(["drops/min","microdrops/min"])}</select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INJECTION layout -->
+      <div class="mode-inj" style="display:none;">
+        <div class="row">
+          <div class="form-group">
+            <label>Strength</label>
+            <div style="display:flex; gap:5px;">
+              <input type="text" class="j-strength" placeholder="e.g. 30" style="width:34%;" oninput="updatePreview()">
+              <select class="j-unit" style="width:34%;" onchange="toggleCustom(this)">${opt(["mg","g","Custom"])}</select>
+              <input type="text" class="j-perml" placeholder="per ml" style="width:32%;" oninput="updatePreview()">
+            </div>
+            <input type="text" class="u-custom j-unit-custom" placeholder="Type custom unit..." style="display:none; margin-top:5px;" oninput="updatePreview()">
+          </div>
+          <div class="form-group"><label>Amount</label><input type="text" class="j-amount" placeholder="e.g. 1 amp" oninput="updatePreview()"></div>
+        </div>
+        <div class="row">
+          <div class="form-group"><label>Route</label><select class="j-route" onchange="updatePreview()">${opt(routes)}</select></div>
+          <div class="form-group"><label>Dosing Schedule</label><select class="j-sched" onchange="updatePreview()">${opt(schedules)}</select></div>
+        </div>
+        <div class="form-group"><label>Sites</label><input type="text" class="j-sites" placeholder="e.g. Left deltoid" oninput="updatePreview()"></div>
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Duration</label>
+          <div style="display:flex; gap:5px;">
+            <input type="number" class="m-duration-num" placeholder="7" style="width:50%;" oninput="updatePreview()">
+            <select class="m-duration-type" style="width:50%;" onchange="toggleDuration(this)"><option value="Days">Days</option><option value="Months">Months</option><option value="Continuous">Continuous</option><option value="N/A">N/A</option></select>
+          </div>
+        </div>
+        <div class="form-group"><label>Relation with Meal</label><select class="m-meal" onchange="updatePreview()"><option value="After Meal">After Meal</option><option value="Before Meal">Before Meal</option><option value="With Meal">With Meal</option><option value="Empty Stomach">Empty Stomach</option><option value="N/A">N/A</option></select></div>
+      </div>
+    `;
+    container.appendChild(div);
+    updatePreview();
+  }
+  function toggleDuration(sel) {
+    const num = sel.parentElement.querySelector('.m-duration-num');
+    const na = sel.value === 'N/A';
+    num.disabled = na;
+    num.style.opacity = na ? '0.5' : '1';
+    updatePreview();
+  }
+  function toggleCustom(sel) {
+    const box = sel.closest('.form-group').querySelector('.u-custom');
+    if (box) {
+      box.style.display = sel.value === 'Custom' ? 'block' : 'none';
+      if (sel.value === 'Custom') box.focus();
+    }
+    updatePreview();
+  }
+  function toggleFormMode(sel) {
+    const item = sel.closest('.med-item');
+    const f = sel.value;
+    item.querySelector('.mode-std').style.display = (f !== 'Infusion' && f !== 'Inj') ? 'block' : 'none';
+    item.querySelector('.mode-inf').style.display = f === 'Infusion' ? 'block' : 'none';
+    item.querySelector('.mode-inj').style.display = f === 'Inj' ? 'block' : 'none';
+    updatePreview();
+  }
+  function removeMedicine(id) {
+    document.getElementById(`med-${id}`).remove();
+    updatePreview();
+  }
+
+  /* ===== INVESTIGATION SEARCH ===== */
+  function searchInvestigations() {
+    const query = document.getElementById('invSearch').value.toLowerCase().trim();
+    const resultsDiv = document.getElementById('invResults');
+    resultsDiv.innerHTML = '';
+    if (!query) { resultsDiv.style.display = 'none'; return; }
+
+    const filtered = allInvestigations.filter(inv =>
+      inv.toLowerCase().includes(query) && !selectedInvestigations.includes(inv)
+    ).slice(0, 40);
+
+    if (filtered.length > 0) {
+      resultsDiv.style.display = 'block';
+      filtered.forEach(inv => {
+        const div = document.createElement('div');
+        div.textContent = inv;
+        div.onclick = () => addInvestigation(inv);
+        resultsDiv.appendChild(div);
+      });
+    } else {
+      resultsDiv.style.display = 'none';
+    }
+  }
+
+  function addInvestigation(inv) {
+    selectedInvestigations.push(inv);
+    document.getElementById('invSearch').value = '';
+    document.getElementById('invResults').style.display = 'none';
+    renderInvTags();
+    updatePreview();
+  }
+
+  function removeInvestigation(inv) {
+    selectedInvestigations = selectedInvestigations.filter(i => i !== inv);
+    renderInvTags();
+    updatePreview();
+  }
+
+  function renderInvTags() {
+    const container = document.getElementById('invTags');
+    container.innerHTML = selectedInvestigations.map(inv =>
+      `<div class="tag">${esc(inv)} <span onclick="removeInvestigation('${inv.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}')">×</span></div>`
+    ).join('');
+  }
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-box')) {
+      document.getElementById('invResults').style.display = 'none';
+    }
+  });
+
+  /* ===== HELPERS ===== */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function buildHeaderHTML() {
+    return `
+      <div class="header">
+        <div class="header-left">
+          <h1>${esc(document.getElementById('dName').value || 'Doctor Name')}</h1>
+          <p style="white-space: pre-wrap;">${esc(document.getElementById('dDegrees').value)}</p>
+          <p style="margin-top:4px; font-size:9px;">
+            <strong>Reg:</strong> <span>${esc(document.getElementById('dReg').value)}</span> |
+            <strong>Phone:</strong> <span>${esc(document.getElementById('dPhone').value)}</span> |
+            <strong>Email:</strong> <span>${esc(document.getElementById('dEmail').value)}</span>
+          </p>
+        </div>
+        <div class="header-divider"></div>
+        <div class="header-right">
+          <div class="hospital-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M9 21v-4a2 2 0 0 1 4 0v4"/><path d="M12 9v4"/><path d="M10 11h4"/>
+            </svg>
+          </div>
+          <div class="hospital-info">
+            <h2>${esc(document.getElementById('cHospital').value || 'Hospital Name')}</h2>
+            <p>${esc(document.getElementById('cLocation').value || 'Location')}</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function buildPatientBarHTML() {
+    const wt = document.getElementById('pWeight').value;
+    return `
+      <div class="patient-bar">
+        <div>Name: <span>${esc(document.getElementById('pName').value)}</span></div>
+        <div>Sex: <span>${esc(document.getElementById('pSex').value)}</span></div>
+        <div>Age: <span>${esc(document.getElementById('pAge').value)}</span></div>
+        <div>Wt: <span>${wt ? esc(wt) + ' kg' : ''}</span></div>
+        <div>Phone: <span>${esc(document.getElementById('pPhone').value)}</span></div>
+        <div>Date: <span>${esc(dateStr)}</span></div>
+      </div>
+    `;
+  }
+
+  function buildLeftColHTML() {
+    let html = '';
+
+    const chiefText = document.getElementById('cChief').value.trim();
+    if (chiefText) {
+      const items = chiefText.split('\n').filter(l => l.trim()).map(l => `<li>${esc(l)}</li>`).join('');
+      html += `<div class="clinical-section"><div class="clinical-title">Chief Complaints</div><ul class="clinical-list">${items}</ul></div>`;
+    }
+
+    const dm = document.querySelector('input[name="rDm"]:checked').value;
+    const htn = document.querySelector('input[name="rHtn"]:checked').value;
+    const ba = document.querySelector('input[name="rBa"]:checked').value;
+    if (dm === 'Positive' || htn === 'Positive' || ba === 'Positive') {
+      const risk = [];
+      if (dm === 'Positive') risk.push('DM');
+      if (htn === 'Positive') risk.push('HTN');
+      if (ba === 'Positive') risk.push('BA');
+      html += `<div class="clinical-section"><div class="clinical-title">Risk Factors</div><div class="clinical-text">Positive for: <span>${esc(risk.join(', '))}</span></div></div>`;
+    }
+
+    const hist = (inputId, title) => {
+      const val = document.getElementById(inputId).value.trim();
+      if (val) html += `<div class="clinical-section"><div class="clinical-title">${title}</div><div class="clinical-text">${esc(val)}</div></div>`;
+    };
+    hist('cPast', 'H/O Past Illness');
+    hist('cDrug', 'Drug History');
+    hist('cAllergy', 'Allergy History');
+    hist('cFamily', 'Family History');
+    hist('cPersonal', 'Personal History');
+
+    // On Examination
+    const sys = document.getElementById('bpSys').value;
+    const dia = document.getElementById('bpDia').value;
+    const pulse = document.getElementById('ePulse').value;
+    const spo2 = document.getElementById('eSpo2').value;
+    const temp = document.getElementById('eTemp').value;
+
+    const vitals = [];
+    if (sys || dia) vitals.push(`<strong>BP:</strong> ${esc(sys || '-')}/${esc(dia || '-')} mmHg`);
+    if (pulse) vitals.push(`<strong>Pulse:</strong> ${esc(pulse)} bpm`);
+    if (spo2) vitals.push(`<strong>SpO2:</strong> ${esc(spo2)}%`);
+    if (temp) vitals.push(`<strong>Temp:</strong> ${esc(temp)}°F`);
+
+    const othersArr = [];
+    document.querySelectorAll('.e-other:checked').forEach(cb => othersArr.push(cb.value));
+
+    let sysHtml = '';
+    let hasExam = vitals.length > 0 || othersArr.length > 0;
+
+    if (document.getElementById('sysResp').checked) {
+      hasExam = true;
+      sysHtml += `<div><strong>Resp:</strong> BS - ${esc(document.getElementById('rsBreath').value)}, Crep - ${esc(document.getElementById('rsCrep').value)}, Rhonchi - ${esc(document.getElementById('rsRhon').value)}</div>`;
+    }
+    if (document.getElementById('sysCardio').checked) {
+      hasExam = true;
+      const hsArr = [];
+      document.querySelectorAll('.hs:checked').forEach(cb => hsArr.push(cb.value));
+      const hsStr = hsArr.length > 0 ? hsArr.join('+') : 'Normal';
+      const murmur = document.getElementById('cvMurmur').value;
+      let murStr = 'None';
+      if (murmur === 'Systolic') murStr = `Sys (${document.getElementById('cvMurmurSysType').value})`;
+      else if (murmur === 'Diastolic') murStr = `Dia (${document.getElementById('cvMurmurDiaType').value})`;
+      else if (murmur !== 'None') murStr = murmur;
+      sysHtml += `<div><strong>CVS:</strong> HS - ${esc(hsStr)}, Murmur - ${esc(murStr)}, Added - ${esc(document.getElementById('cvAdded').value)}</div>`;
+    }
+    if (document.getElementById('sysNervous').checked) {
+      hasExam = true;
+      sysHtml += `<div><strong>Nervous:</strong> Tone - ${esc(document.getElementById('nsTone').value)}, Power - ${esc(document.getElementById('nsPower').value)}, Jerk - ${esc(document.getElementById('nsJerk').value)}, Plantar - ${esc(document.getElementById('nsPlantar').value)}</div>`;
+    }
+
+    const oleVal = document.getElementById('eOLE').value.trim();
+    if (oleVal) hasExam = true;
+
+    if (hasExam) {
+      html += `<div class="clinical-section" style="margin-top:5px;"><div class="clinical-title">On Examination</div><div class="clinical-text"><strong>O/G/E:</strong><br><div>${vitals.join(' | ')}</div>`;
+      if (othersArr.length > 0) html += `<div style="color:var(--primary); font-weight:600;">Others: ${esc(othersArr.join(', '))}</div>`;
+      if (sysHtml) html += `<div style="margin-top:8px;"><strong>O/S/E:</strong></div>${sysHtml}`;
+      if (oleVal) html += `<div style="margin-top:3px;"><strong>O/L/E:</strong> ${esc(oleVal)}</div>`;
+      html += `</div></div>`;
+    }
+
+    if (selectedInvestigations.length > 0) {
+      const items = selectedInvestigations.map(i => `<li>${esc(i)}</li>`).join('');
+      html += `<div class="clinical-section" style="margin-top:5px;"><div class="clinical-title">Investigations</div><ul class="clinical-list">${items}</ul></div>`;
+    }
+
+    const provDx = document.getElementById('provDx').value.trim();
+    if (provDx) {
+      html += `<div class="clinical-section" style="margin-top:5px;"><div class="clinical-title">Provisional Diagnosis</div><div class="clinical-text" style="font-weight:600; color:var(--primary);">${esc(provDx)}</div></div>`;
+    }
+    const ddx = document.getElementById('dDx').value.trim();
+    if (ddx) {
+      html += `<div class="clinical-section" style="margin-top:5px;"><div class="clinical-title">D/Dx</div><div class="clinical-text" style="font-weight:600; color:#334155;">${esc(ddx)}</div></div>`;
+    }
+
+    return html;
+  }
+
+  function buildCareAndMedRows() {
+    const rows = [];
+    let counter = 1;
+
+    const dietSelect = document.getElementById('careDiet').value;
+    let dietFinal = dietSelect;
+    if (dietSelect === 'Others') dietFinal = document.getElementById('careDietOthers').value.trim();
+    if (dietFinal) rows.push({ n: counter++, title: `Diet - ${dietFinal}`, color: '#0f766e', care: true });
+
+    const o2Val = document.getElementById('careO2').value.trim();
+    if (o2Val) rows.push({ n: counter++, title: `O2 Inhalation - ${o2Val} L/min`, color: '#0f766e', care: true });
+
+    if (document.getElementById('careCBR').checked) rows.push({ n: counter++, title: 'Complete Bed Rest', color: '#0f766e', care: true });
+
+    const posVal = document.getElementById('carePos').value;
+    if (posVal) rows.push({ n: counter++, title: posVal, color: '#0f766e', care: true });
+
+    document.querySelectorAll('.med-item').forEach((item) => {
+      const v = c => (item.querySelector(c) ? item.querySelector(c).value.trim() : '');
+      const form = v('.m-form');
+      const name = v('.m-name');
+      const durNum = v('.m-duration-num');
+      const durType = v('.m-duration-type');
+      const meal = v('.m-meal');
+
+      let title = '';
+      let parts = [];
+      let hasData = false;
+
+      if (form === 'Infusion') {
+        const st = v('.i-strength');
+        title = `${form} ${name} ${st ? st + ' ' + v('.i-qunit') : ''}`.replace(/\s+/g, ' ').trim();
+        const rate = v('.i-rate');
+        if (v('.i-dosage')) parts.push(v('.i-dosage'));
+        parts.push(v('.i-route'));
+        if (rate) parts.push(`${rate} ${v('.i-rateunit')}`);
+        hasData = !!(name || st);
+      } else if (form === 'Inj') {
+        const st = v('.j-strength');
+        const u = v('.j-unit') === 'Custom' ? v('.j-unit-custom') : v('.j-unit');
+        const pm = v('.j-perml');
+        let strTxt = '';
+        if (st) strTxt = pm ? `${st}${u}/${pm}ml` : st + (u ? ' ' + u : '');
+        title = `${form} ${name} ${strTxt}`.replace(/\s+/g, ' ').trim();
+        if (v('.j-amount')) parts.push(v('.j-amount'));
+        parts.push(v('.j-route'));
+        parts.push(v('.j-sched'));
+        if (v('.j-sites')) parts.push(v('.j-sites'));
+        hasData = !!(name || st);
+      } else {
+        const st = v('.m-strength');
+        const u = v('.m-unit') === 'Custom' ? v('.m-unit-custom') : v('.m-unit');
+        title = `${form} ${name} ${st ? st + (u ? ' ' + u : '') : ''}`.replace(/\s+/g, ' ').trim();
+        parts.push(v('.m-dosage'));
+        hasData = !!(name || st);
+      }
+
+      if (hasData) {
+        let durationStr = '';
+        if (durType === 'Continuous') durationStr = 'Continuous';
+        else if (durType === 'N/A') durationStr = '';
+        else if (durNum) durationStr = `${durNum} ${durType}`;
+        if (durationStr) parts.push(durationStr);
+        if (meal !== 'N/A') parts.push(meal);
+        rows.push({ n: counter++, title, details: parts.filter(x => x !== '').join(' • '), color: '' });
+      }
+    });
+
+    return rows;
+  }
+
+  function buildRowsHTML(rows) {
+    return rows.map(r => `
+      <tr>
+        <td>${r.n}.</td>
+        <td>
+          <div class="med-title" ${r.color ? `style="color:${r.color};"` : ''}>${esc(r.title)}</div>
+          ${r.details ? `<div class="med-details">${esc(r.details)}</div>` : ''}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function buildSpecialAndAdviceHTML() {
+    let html = '';
+    let instHtml = '';
+    if (document.getElementById('instCath').checked) instHtml += `<div>• Continuous Catheterisation</div>`;
+    if (document.getElementById('instHosp').checked) instHtml += `<div>• Urgent Hospitalisation</div>`;
+    if (document.getElementById('instRef').checked) {
+      const refText = document.getElementById('instRefText').value.trim();
+      if (refText) instHtml += `<div>• Referred to: ${esc(refText)}</div>`;
+    }
+    if (instHtml) html += `<div class="special-inst">${instHtml}</div>`;
+
+    const adviceVal = document.getElementById('advice').value.trim();
+    if (adviceVal) {
+      html += `<div class="advice-section"><div class="advice-inner"><div class="advice-title">Advice</div><div class="advice-text">${esc(adviceVal)}</div></div></div>`;
+    }
+    return html;
+  }
+
+  function buildFooterHTML() {
+    return `
+      <div class="footer-container">
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-text">Doctor's Signature</div>
+        </div>
+        <div class="footer">
+          <div class="footer-left">
+            <strong>MediScript Pro</strong><br>
+            This prescription is digitally generated.
+          </div>
+          <div class="footer-quote">${HEALING_QUOTE}</div>
+          <div class="footer-right" style="text-align:right;">
+            <strong>Generated on:</strong> ${esc(dateStr)}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function buildHospitalLogo() {
+    return `<div class="rx-logo"><svg viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M9 21v-4a2 2 0 0 1 4 0v4"/><path d="M12 9v4"/><path d="M10 11h4"/></svg></div>`;
+  }
+
+  /* ===== PAGE BUILDERS ===== */
+  function buildPage1(rows, isMulti) {
+    return `
+      <div class="a4-paper" id="prescriptionPaperPage1">
+        <div class="content-wrapper">
+          ${buildHeaderHTML()}
+          ${buildPatientBarHTML()}
+          <div class="content-area">
+            <div class="left-col">${buildLeftColHTML()}</div>
+            <div class="right-col">
+              ${buildHospitalLogo()}
+              <div class="rx-symbol">℞</div>
+              <table class="med-table">${buildRowsHTML(rows)}</table>
+              ${isMulti ? '' : buildSpecialAndAdviceHTML()}
+            </div>
+          </div>
+          ${buildFooterHTML()}
+        </div>
+      </div>
+    `;
+  }
+
+  function buildPage2(rows) {
+    return `
+      <div class="a4-paper page2" id="prescriptionPaperPage2">
+        <div class="content-wrapper">
+          <div class="page2-body">
+            <div class="page2-left"></div>
+            <div class="page2-right">
+              ${buildHospitalLogo()}
+              <div class="rx-symbol">℞</div>
+              <table class="med-table">${buildRowsHTML(rows)}</table>
+              ${buildSpecialAndAdviceHTML()}
+            </div>
+          </div>
+          ${buildFooterHTML()}
+        </div>
+      </div>
+    `;
+  }
+
+  /* ===== LIVE PREVIEW ===== */
+  function updatePreview() {
+    const previewPanel = document.getElementById('previewPanel');
+    const medRows = buildCareAndMedRows();
+    const MAX_MEDS_PAGE1 = 12;
+    const careRows = medRows.filter(r => r.care);
+    const drugRows = medRows.filter(r => !r.care);
+    const isMulti = drugRows.length > MAX_MEDS_PAGE1;
+
+    const wrap = h => `<div class="page-scaler">${h}</div>`;
+    if (!isMulti) {
+      previewPanel.innerHTML = wrap(buildPage1(medRows, false));
+    } else {
+      previewPanel.innerHTML = wrap(buildPage1(careRows.concat(drugRows.slice(0, MAX_MEDS_PAGE1)), true)) + wrap(buildPage2(drugRows.slice(MAX_MEDS_PAGE1)));
+    }
+    autoFit();
+    fitPreview();
+  }
+
+  /* Shrink spacing step by step until page content fits its A4 page */
+  function autoFit() {
+    document.querySelectorAll('#previewPanel .a4-paper').forEach(paper => {
+      const cols = Array.from(paper.querySelectorAll('.right-col, .page2-right, .left-col'));
+      for (let lvl = 0; lvl <= 4; lvl++) {
+        paper.dataset.density = lvl;
+        if (cols.every(c => c.scrollHeight <= c.clientHeight + 1)) break;
+      }
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => updatePreview());
+
+  /* Scale pages to fit the preview panel (preview only; export uses a clean full-size clone) */
+  function fitPreview() {
+    const panel = document.getElementById('previewPanel');
+    const avail = panel.clientWidth - 40;
+    const scale = Math.min(1, Math.max(0.3, avail / 794));
+    panel.querySelectorAll('.page-scaler').forEach(w => {
+      w.style.width = (794 * scale) + 'px';
+      w.style.height = (1123 * scale) + 'px';
+      w.firstElementChild.style.transform = `scale(${scale})`;
+    });
+  }
+  window.addEventListener('resize', fitPreview);
+
+  /* ===== PDF EXPORT ===== */
+  async function downloadPDF() {
+    updatePreview();
+
+    const btn = document.getElementById('btnDownload');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '⏳ Generating...';
+    btn.disabled = true;
+
+    try {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    } catch (e) {}
+
+    try {
+      const srcPapers = Array.from(document.querySelectorAll('#previewPanel .a4-paper'));
+      if (srcPapers.length === 0) throw new Error('No pages found');
+
+      // Render clean, unscaled clones off-screen so output is exact and sharp
+      const stage = document.createElement('div');
+      stage.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;';
+      document.body.appendChild(stage);
+      const papers = srcPapers.map(sp => {
+        const c = sp.cloneNode(true);
+        c.style.transform = 'none';
+        c.style.margin = '0';
+        c.style.boxShadow = 'none';
+        c.style.borderRadius = '0';
+        stage.appendChild(c);
+        return c;
+      });
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: false });
+
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const pageRatio = pageW / pageH;
+
+      for (let i = 0; i < papers.length; i++) {
+        const canvas = await html2canvas(papers[i], {
+          scale: /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 3 : 4,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: '#ffffff',
+          logging: false,
+          width: 794,
+          height: 1123,
+          windowWidth: 794,
+          scrollX: 0,
+          scrollY: 0
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const imgRatio = canvas.width / canvas.height;
+
+        let drawW, drawH, offsetX, offsetY;
+        if (imgRatio > pageRatio) {
+          drawW = pageW; drawH = pageW / imgRatio; offsetX = 0; offsetY = (pageH - drawH) / 2;
+        } else {
+          drawH = pageH; drawW = pageH * imgRatio; offsetX = (pageW - drawW) / 2; offsetY = 0;
+        }
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', offsetX, offsetY, drawW, drawH, undefined, 'NONE');
+      }
+
+      document.body.removeChild(stage);
+
+      const patientName = (document.getElementById('pName').value || 'Patient').trim().replace(/\s+/g, '_');
+      const fileName = `Prescription_${patientName}_${new Date().toISOString().slice(0,10)}.pdf`;
+
+      const blob = pdf.output('blob');
+
+      const url = URL.createObjectURL(blob);
+      let handled = false;
+
+      // Hosted viewers (if any) provide a download capability; use it when present
+      try {
+        const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+        if (dl) { await dl.save({ filename: fileName, data: blob }); handled = true; }
+      } catch (e) { handled = true; }
+
+      if (!handled) {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isIOS) {
+          window.open(url, '_blank'); // iOS: open PDF, then Share > Save to Files
+        } else {
+          // Windows / Mac / Linux / Android (Chrome, Edge, Firefox, Samsung Internet)
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.rel = 'noopener';
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 120000);
+
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      alert('PDF export failed. Please try again or use a different browser.');
+    } finally {
+      btn.innerHTML = originalHTML;
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>
