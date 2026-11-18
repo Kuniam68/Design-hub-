@@ -785,9 +785,20 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .history-filter-tab:hover{border-color:#80bcae;transform:translateY(-1px)}
 .history-filter-tab.is-active{background:#08796d;border-color:#08796d;color:#fff;box-shadow:0 5px 13px #08796d2b}
 .history-filter-tab:focus-visible{outline:3px solid #18ab99;outline-offset:3px}
-.history-filter-search{display:flex;align-items:end;gap:10px;margin-top:14px}
-.history-filter-search #historyRefresh{border:1px solid #d3e4dd;background:#eaf2ee;color:#225d53;border-radius:10px;padding:12px 14px;font:700 12px inherit;cursor:pointer}
-@media(max-width:650px){.history-filter-panel{padding:13px}.history-filter-tabs{gap:7px}.history-filter-tab{padding:9px 11px;font-size:11px}.history-filter-search{flex-wrap:wrap}.history-filter-search .history-search-label{flex-basis:100%}.history-filter-search #historyRefresh{margin-left:auto}}
+.history-search-header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:19px 0 9px}
+.history-search-header span{font-size:12px;font-weight:800;color:#214e43}
+.history-search-header small{font-size:11px;color:#7b938a}
+.history-filter-search{display:grid;grid-template-columns:minmax(0,1fr) 116px;align-items:stretch;gap:10px}
+.history-search-field{display:flex;align-items:center;gap:11px;min-width:0;min-height:52px;padding:0 15px;border:1px solid #d0e5db;border-radius:14px;background:#fff;box-shadow:0 3px 10px #0a6c5310;transition:border-color .2s,box-shadow .2s}
+.history-search-field:focus-within{border-color:#0b9582;box-shadow:0 0 0 3px #0b95821c}
+.history-search-icon{flex:none;color:#5c9486}
+.history-search-field .history-search-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.history-search-field input{display:block;flex:1;min-width:0;width:100%;height:50px;padding:0;border:0;outline:0;background:transparent;color:#183f36;font:inherit;font-size:13px;box-shadow:none}
+.history-search-field input::placeholder{color:#91a49c}
+.history-filter-search #historyRefresh{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;height:52px;border:1px solid #d3e4dd;background:#e8f3ee;color:#246357;border-radius:14px;padding:0 13px;font:700 12px inherit;cursor:pointer;white-space:nowrap}
+.history-filter-search #historyRefresh:hover{background:#dcefe6}
+.history-filter-search #historyRefresh:focus-visible{outline:3px solid #18ab99;outline-offset:2px}
+@media(max-width:650px){.history-filter-panel{padding:13px}.history-filter-tabs{gap:7px}.history-filter-tab{padding:9px 11px;font-size:11px}.history-filter-search{grid-template-columns:minmax(0,1fr) 52px}.history-filter-search #historyRefresh{padding:0}.history-filter-search #historyRefresh span{display:none}.history-search-header small{display:none}}
 @media(prefers-reduced-motion:reduce){.history-filter-tab{transition:none}.history-filter-tab:hover{transform:none}}
 .history-search-label{display:block;flex:1;font-size:11px;font-weight:700;color:#4d6c63}
 .history-search-label input{display:block;width:100%;min-width:0;margin-top:6px;padding:12px 14px;border:1px solid #d4e6de;border-radius:11px;background:#fff;font:inherit;font-size:13px;color:#173f39}
@@ -1224,11 +1235,19 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     <button type="button" class="history-filter-tab is-active" data-history-filter="recent" aria-pressed="true"><span aria-hidden="true">◷</span> Recently Added</button>
     <button type="button" class="history-filter-tab" data-history-filter="saved" aria-pressed="false"><span aria-hidden="true">✓</span> Saved</button>
     <button type="button" class="history-filter-tab" data-history-filter="all" aria-pressed="false">All Records</button>
-    <button type="button" class="history-filter-tab" data-history-filter="temporary" aria-pressed="false">Temporary</button>
+    
     <button type="button" class="history-filter-tab" data-history-filter="favorite" aria-pressed="false"><span aria-hidden="true">★</span> Favorites</button>
    </div>
-   <select id="historyFilter" aria-label="Filter prescriptions" hidden><option value="recent">Recently Added</option><option value="all">All records</option><option value="temporary">Temporary</option><option value="saved">Saved</option><option value="favorite">Favorites</option></select>
-   <div class="history-filter-search"><label class="history-search-label" for="historySearch">Search records<input id="historySearch" type="search" placeholder="Search patient name, phone or diagnosis" autocomplete="off"></label><button type="button" id="historyRefresh">↻ Refresh</button></div>
+   <select id="historyFilter" aria-label="Filter prescriptions" hidden><option value="recent">Recently Added</option><option value="all">All records</option><option value="saved">Saved</option><option value="favorite">Favorites</option></select>
+   <div class="history-search-header"><span>Find a prescription</span><small>Search your private archive</small></div>
+   <div class="history-filter-search">
+    <div class="history-search-field">
+     <svg class="history-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7.2"/><path d="m16.2 16.2 4.3 4.3"/></svg>
+     <label class="history-search-label" for="historySearch">Search prescriptions</label>
+     <input id="historySearch" type="search" placeholder="Patient name, phone or diagnosis…" autocomplete="off">
+    </div>
+    <button type="button" id="historyRefresh" aria-label="Refresh prescription history"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M5.5 9A7.5 7.5 0 0 1 19 12M18.5 15A7.5 7.5 0 0 1 5 12"/></svg><span>Refresh</span></button>
+   </div>
   </div>
   <div id="historyList" class="history-list" aria-live="polite"></div>
   <p id="historyStatus" class="history-status" role="status" aria-live="polite"></p>
