@@ -2359,6 +2359,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  let records=[],busy=false,loadFailed=false;
  const filter=document.getElementById("historyFilter");
  let captureInFlight=null;
+ let lastCaptureError='';
+ const reportCapture=(message,error=false)=>{lastCaptureError=error?message:'';try{sessionStorage.setItem('mediscript-history-capture-error',lastCaptureError);}catch(_){};if(dialog.open)notify(message,error);};
  const notify=(message,error=false)=>{status.textContent=message;status.style.color=error?'#b91c1c':'#256d60';};
  const controlValue=el=>el.type==='checkbox'||el.type==='radio'?el.checked:el.value;
  const applyValue=(el,value)=>{if(el.type==='checkbox'||el.type==='radio')el.checked=Boolean(value);else el.value=String(value??'');};
@@ -2461,9 +2463,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    const record=capture();
    if(!record.patientName)return;
    if(captureInFlight)return captureInFlight;
-   captureInFlight=window.historyCloud.capture(record).catch(error=>{
+   captureInFlight=window.historyCloud.capture(record).then(()=>{reportCapture('Prescription saved to History.');}).catch(error=>{
      console.error('Automatic prescription history capture failed:',error);
-     window.dispatchEvent(new CustomEvent('mediscript-history-error',{detail:'History capture failed ['+String(error?.code||'unknown')+']: '+String(error?.message||'').slice(0,220)}));
+     const message='Automatic save failed ['+String(error?.code||'unknown')+']: '+String(error?.message||'').slice(0,220);reportCapture(message,true);window.dispatchEvent(new CustomEvent('mediscript-history-error',{detail:message}));
    }).finally(()=>{captureInFlight=null;});
    return captureInFlight;
  };
@@ -2473,7 +2475,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  search.addEventListener('input',render);
  filter.addEventListener('change',render);
  window.addEventListener('mediscript-history-error',e=>{console.warn(e.detail);if(dialog.open)notify(e.detail,true);else {const status=document.getElementById('historyStatus');if(status){status.textContent=e.detail;status.style.color='#b91c1c';} }});
- window.openPrescriptionHistory=()=>{dialog.showModal();search.value='';filter.value='all';refresh();};
+ window.openPrescriptionHistory=async()=>{dialog.showModal();search.value='';filter.value='all';await refresh();const previous=lastCaptureError||(()=>{try{return sessionStorage.getItem('mediscript-history-capture-error')||'';}catch(_){return '';}})();if(previous&&!loadFailed)notify(previous,true);};
 })();
 
 </script>
