@@ -795,6 +795,14 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .history-search-field .history-search-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .history-search-field input{display:block;flex:1;min-width:0;width:100%;height:50px;padding:0;border:0;outline:0;background:transparent;color:#183f36;font:inherit;font-size:13px;box-shadow:none}
 .history-search-field input::placeholder{color:#819b92}
+.history-search-field input,.history-search-field input:focus,.history-search-field input:focus-visible{appearance:none;-webkit-appearance:none;border:0!important;border-radius:0!important;outline:none!important;box-shadow:none!important;background:transparent!important;padding:0!important;margin:0!important}
+.history-search-field:focus-within{outline:0;box-shadow:0 0 0 3px #0b95821b,0 6px 20px #0b766b12}
+.history-search-guide{position:absolute;top:calc(100% + 7px);left:0;right:0;z-index:20;max-height:220px;overflow:auto;border:1px solid #cfe4db;border-radius:14px;background:#fff;box-shadow:0 15px 32px #0b4b3930;padding:5px}
+.history-search-guide[hidden]{display:none!important}
+.history-search-guide button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:11px 12px;border:0;border-radius:9px;background:transparent;color:#204d42;font:600 12px inherit;cursor:pointer}
+.history-search-guide button:hover,.history-search-guide button:focus-visible{background:#eaf7f1;outline:none}
+.history-search-guide button small{font-size:10px;font-weight:400;color:#6b897f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 .history-filter-search #historyRefresh{align-self:center;display:inline-flex;align-items:center;justify-content:center;min-height:48px;height:48px;border:1px solid #d3e4dd;background:#eaf2ee;color:#225d53;border-radius:10px;padding:12px 14px;font:700 12px inherit;cursor:pointer;white-space:nowrap}
 .history-filter-search #historyRefresh:focus-visible{outline:3px solid #18ab99;outline-offset:2px}
 @media(max-width:650px){.history-filter-panel{padding:13px}.history-filter-tabs{gap:7px}.history-filter-tab{padding:9px 11px;font-size:11px}.history-filter-search{gap:8px}.history-filter-search #historyRefresh{padding:12px 10px}.history-search-header small{display:none}.history-search-field{padding:0 10px;gap:7px}.history-search-icon{padding:5px}.history-search-field input{font-size:12px}}
@@ -1229,7 +1237,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 
   </div>
   <div class="history-filter-panel" aria-label="Prescription filters">
-   <div class="history-filter-heading"><span>Explore your records</span><small>Choose a collection</small></div>
+   <div class="history-filter-heading"><span>Explore your records</span></div>
    <div class="history-filter-tabs" role="group" aria-label="Filter prescription history">
     <button type="button" class="history-filter-tab is-active" data-history-filter="recent" aria-pressed="true"><span aria-hidden="true">◷</span> Recently Added</button>
     <button type="button" class="history-filter-tab" data-history-filter="saved" aria-pressed="false"><span aria-hidden="true">✓</span> Saved</button>
@@ -1238,12 +1246,12 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     <button type="button" class="history-filter-tab" data-history-filter="favorite" aria-pressed="false"><span aria-hidden="true">★</span> Favorites</button>
    </div>
    <select id="historyFilter" aria-label="Filter prescriptions" hidden><option value="recent">Recently Added</option><option value="all">All records</option><option value="saved">Saved</option><option value="favorite">Favorites</option></select>
-   <div class="history-search-header"><span>Find a prescription</span><small>Search your private archive</small></div>
+   <div class="history-search-header"><span>Find a prescription</span></div>
    <div class="history-filter-search">
     <div class="history-search-field">
      <svg class="history-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="7.2"/><path d="m16.2 16.2 4.3 4.3"/></svg>
      <label class="history-search-label" for="historySearch">Search prescriptions</label>
-     <input id="historySearch" type="search" placeholder="Patient name, phone or diagnosis…" autocomplete="off">
+     <input id="historySearch" type="search" placeholder="Patient name, phone or diagnosis…" autocomplete="off" aria-autocomplete="list" aria-controls="historySearchGuide" aria-expanded="false"><div id="historySearchGuide" class="history-search-guide" role="listbox" aria-label="Matching prescriptions" hidden></div>
     </div>
     <button type="button" id="historyRefresh">↻ Refresh</button>
    </div>
@@ -2592,10 +2600,39 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  document.getElementById('historyRefresh').addEventListener('click',refresh);
  document.getElementById('historyClose').addEventListener('click',()=>dialog.close());
  document.getElementById('historyDone').addEventListener('click',()=>dialog.close());
- search.addEventListener('input',render);
+ const searchGuide=document.getElementById('historySearchGuide');
+ function hideSearchGuide(){searchGuide.hidden=true;search.setAttribute('aria-expanded','false');}
+ function updateSearchGuide(){
+   searchGuide.replaceChildren();
+   const term=search.value.trim().toLocaleLowerCase();
+   if(!term){hideSearchGuide();return;}
+   const seen=new Set();
+   for(const item of records){
+     const name=String(item.patientName||'').trim();
+     const diagnosis=String(item.diagnosis||'').trim();
+     const phone=String(item.patientPhone||'').trim();
+     if(!name||seen.has(name.toLocaleLowerCase())||![name,diagnosis,phone].some(x=>x.toLocaleLowerCase().includes(term)))continue;
+     seen.add(name.toLocaleLowerCase());
+     const option=document.createElement('button');option.type='button';option.setAttribute('role','option');
+     const label=document.createElement('span');label.textContent=name;
+     const detail=document.createElement('small');detail.textContent=diagnosis||phone||'Patient record';
+     option.append(label,detail);
+     option.addEventListener('pointerdown',event=>event.preventDefault());
+     option.addEventListener('click',()=>{search.value=name;hideSearchGuide();render();search.focus();});
+     searchGuide.append(option);
+     if(seen.size>=6)break;
+   }
+   searchGuide.hidden=!searchGuide.childElementCount;
+   search.setAttribute('aria-expanded',String(!searchGuide.hidden));
+ }
+ search.addEventListener('input',()=>{render();updateSearchGuide();});
+ search.addEventListener('keydown',event=>{if(event.key==='Escape')hideSearchGuide();else if(event.key==='ArrowDown'&&!searchGuide.hidden){event.preventDefault();searchGuide.querySelector('button')?.focus();}});
+ searchGuide.addEventListener('keydown',event=>{if(event.key==='Escape'){hideSearchGuide();search.focus();}});
+ document.addEventListener('pointerdown',event=>{if(!event.target.closest('.history-search-field'))hideSearchGuide();});
+
  filter.addEventListener('change',()=>setHistoryFilter(filter.value));
  window.addEventListener('mediscript-history-error',e=>{console.warn(e.detail);if(dialog.open)notify(e.detail,true);else {const status=document.getElementById('historyStatus');if(status){status.textContent=e.detail;status.style.color='#b91c1c';} }});
- window.openPrescriptionHistory=async()=>{dialog.showModal();search.value='';setHistoryFilter('recent');if(hasLoaded){render();notify('Checking for updates…');}await refresh();const previous=lastCaptureError||(()=>{try{return sessionStorage.getItem('mediscript-history-capture-error')||'';}catch(_){return '';}})();if(previous&&!loadFailed)notify(previous,true);};
+ window.openPrescriptionHistory=async()=>{dialog.showModal();search.value='';hideSearchGuide();setHistoryFilter('recent');if(hasLoaded){render();notify('Checking for updates…');}await refresh();const previous=lastCaptureError||(()=>{try{return sessionStorage.getItem('mediscript-history-capture-error')||'';}catch(_){return '';}})();if(previous&&!loadFailed)notify(previous,true);};
 })();
 
 </script>
