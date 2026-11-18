@@ -739,6 +739,21 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 @media(prefers-reduced-motion:reduce){.practice-dialog{animation:none}.practice-card{transition:none}.practice-card:hover{transform:none}}
 </style>
 <style id="history-styles">
+.history-confirm{border:0;border-radius:24px;padding:0;width:min(430px,calc(100vw - 32px));max-height:calc(100dvh - 28px);overflow:auto;margin:auto;background:#fff;color:#193d37;box-shadow:0 32px 100px #092c3859;font-family:inherit;animation:historyEnter .22s ease-out}
+.history-confirm::backdrop{background:#092d39a8;backdrop-filter:blur(6px)}
+.history-confirm-inner{padding:29px 28px 25px;text-align:center}
+.history-confirm-icon{width:68px;height:68px;border-radius:21px;background:#e8f7f1;color:#087e70;display:grid;place-items:center;font-size:32px;margin:0 auto 18px}
+.history-confirm[data-kind="delete"] .history-confirm-icon{background:#fff0ec;color:#b84236}
+.history-confirm h3{font-size:23px;letter-spacing:-.5px;line-height:1.25;margin:0 0 11px}
+.history-confirm p{font-size:14px;color:#607d75;line-height:1.65;margin:0 0 22px;overflow-wrap:anywhere}
+.history-confirm-actions{display:flex;gap:10px}
+.history-confirm-actions button{flex:1;min-height:47px;border-radius:12px;padding:11px 13px;border:1px solid #d5e5df;background:#f3f8f5;color:#255a50;font:700 13px inherit;cursor:pointer}
+.history-confirm-actions .history-confirm-accept{background:#087b6d;border-color:#087b6d;color:#fff}
+.history-confirm[data-kind="delete"] .history-confirm-accept{background:#c34b40;border-color:#c34b40}
+.history-confirm button:focus-visible{outline:3px solid #1aab96;outline-offset:3px}
+@media(max-width:430px){.history-confirm-inner{padding:24px 18px}.history-confirm-actions{flex-direction:column-reverse}}
+@media(prefers-reduced-motion:reduce){.history-confirm{animation:none}}
+
 .history-dialog{border:0;padding:0;width:min(840px,calc(100vw - 24px));max-height:calc(100dvh - 26px);overflow:auto;margin:auto;border-radius:24px;background:#f6f9f8;color:#183d38;font-family:inherit;box-shadow:0 30px 100px #092e3550;animation:historyEnter .28s ease-out}
 .history-dialog::backdrop{background:#092e34ad;backdrop-filter:blur(5px)}
 .history-header{background:linear-gradient(125deg,#123b47,#0c766e);color:white;padding:30px;position:relative}
@@ -1159,6 +1174,17 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  window.addEventListener('mediscript-locations-loaded',()=>{if(dialog.open)reload();});
 })();
 </script>
+<dialog class="history-confirm" id="historyConfirmDialog" aria-labelledby="historyConfirmTitle" aria-describedby="historyConfirmDescription">
+ <div class="history-confirm-inner">
+  <div class="history-confirm-icon" id="historyConfirmIcon" aria-hidden="true">↗</div>
+  <h3 id="historyConfirmTitle">Open prescription?</h3>
+  <p id="historyConfirmDescription"></p>
+  <div class="history-confirm-actions">
+   <button type="button" id="historyConfirmCancel">Keep editing</button>
+   <button type="button" id="historyConfirmAccept" class="history-confirm-accept">Open prescription</button>
+  </div>
+ </div>
+</dialog>
 <dialog class="history-dialog" id="historyDialog" aria-labelledby="historyTitle">
  <header class="history-header">
   <button type="button" class="history-x" id="historyClose" aria-label="Close prescription history">×</button>
@@ -2360,6 +2386,37 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 (function(){
  const dialog=document.getElementById('historyDialog'),list=document.getElementById('historyList'),status=document.getElementById('historyStatus'),search=document.getElementById('historySearch');
  let records=[],busy=false,loadFailed=false,hasLoaded=false,editingSourceId='';
+ const confirmation=document.getElementById('historyConfirmDialog');
+ const confirmTitle=document.getElementById('historyConfirmTitle');
+ const confirmDescription=document.getElementById('historyConfirmDescription');
+ const confirmCancel=document.getElementById('historyConfirmCancel');
+ const confirmAccept=document.getElementById('historyConfirmAccept');
+ const confirmIcon=document.getElementById('historyConfirmIcon');
+ let pendingConfirmation=null;
+ function askHistoryConfirmation(kind,patientName){
+   if(confirmation.open)return Promise.resolve(false);
+   confirmation.dataset.kind=kind;
+   const name=String(patientName||'this patient').slice(0,160);
+   confirmIcon.textContent=kind==='delete'?'⌫':'↗';
+   confirmTitle.textContent=kind==='delete'?'Delete this prescription?':'Open this prescription?';
+   confirmDescription.textContent=kind==='delete'
+     ?'Permanently delete the prescription for '+name+'? This action cannot be undone.'
+     :'Open the prescription for '+name+'? Your current unsaved patient information will be replaced. Your doctor profile stays unchanged.';
+   confirmCancel.textContent=kind==='delete'?'Keep prescription':'Keep editing';
+   confirmAccept.textContent=kind==='delete'?'Delete permanently':'Open prescription';
+   return new Promise(resolve=>{pendingConfirmation=resolve;confirmation.showModal();confirmCancel.focus();});
+ }
+ function settleHistoryConfirmation(accepted){
+   if(!pendingConfirmation)return;
+   const resolve=pendingConfirmation;pendingConfirmation=null;
+   if(confirmation.open)confirmation.close();
+   resolve(accepted);
+ }
+ confirmCancel.addEventListener('click',()=>settleHistoryConfirmation(false));
+ confirmAccept.addEventListener('click',()=>settleHistoryConfirmation(true));
+ confirmation.addEventListener('cancel',event=>{event.preventDefault();settleHistoryConfirmation(false);});
+ confirmation.addEventListener('click',event=>{if(event.target===confirmation)settleHistoryConfirmation(false);});
+
  const filter=document.getElementById("historyFilter");
  let captureInFlight=null;
  let lastCaptureError='';
@@ -2431,8 +2488,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
      card.append(meta);
      if(r.diagnosis)card.append(el('p','history-record-diagnosis',r.diagnosis.slice(0,240)));
      const actions=el('div','history-record-buttons');
-     actions.append(button('↗ Open prescription','history-open',()=>{
-       if(hasUnsavedWork()&&!confirm('Open this saved prescription? Current unsaved patient information will be replaced. Your doctor profile stays unchanged.'))return;
+     actions.append(button('↗ Open prescription','history-open',async()=>{
+       if(hasUnsavedWork()&&!(await askHistoryConfirmation('open',r.patientName)))return;
        try{restore(r);editingSourceId=r.id;dialog.close();document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});}
        catch(error){notify('Unable to open this record. '+error.message,true);}
      }));
@@ -2449,7 +2506,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
        finally{busy=false;render();}
      }));
      actions.append(button('Delete','history-delete',async()=>{
-       if(!confirm('Permanently delete the saved prescription for '+(r.patientName||'this patient')+'? This cannot be undone.'))return;
+       if(!(await askHistoryConfirmation('delete',r.patientName)))return;
        if(busy)return;busy=true;render();notify('Deleting record…');
        try{await window.historyCloud.remove(r.id);records=records.filter(x=>x.id!==r.id);notify('Prescription deleted.');}
        catch(error){notify('Delete failed. Please check your Firestore access rules and connection.',true);}
