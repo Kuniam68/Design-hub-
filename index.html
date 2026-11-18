@@ -1119,12 +1119,12 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <div class="history-kicker">MEDISCRIPT PRO · CLINICAL RECORDS</div>
   <h2 id="historyTitle">Prescription History</h2>
   <p>Your saved prescriptions, organized and ready when you need them.</p>
-  <div class="history-stats"><span id="historyTotal">— saved records</span><span>🔒 Your signed-in account</span></div>
+  <div class="history-stats"><span id="historyTotal">— saved records</span><span>🔒 Private account archive</span></div>
  </header>
  <div class="history-main">
   <div class="history-actions">
-   <div><strong>Saved prescriptions</strong><small>Save intentionally, search by patient, and reopen previous prescriptions.</small></div>
-   <button type="button" id="historySaveCurrent" class="history-primary">＋ Save current prescription</button>
+   <div><strong>Prescription archive</strong><small>Save from the prescription editor, or use this shortcut to save your current work.</small></div>
+   <button type="button" id="historySaveCurrent" class="history-primary">＋ Save from editor</button>
   </div>
   <div class="history-filters"><label class="history-search-label" for="historySearch">Search records<input id="historySearch" type="search" placeholder="Search patient name, phone or diagnosis" autocomplete="off"></label><button type="button" id="historyRefresh">↻ Refresh</button></div>
   <div id="historyList" class="history-list" aria-live="polite"></div>
@@ -1464,7 +1464,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   </div>
 
   <!-- ACTION BUTTONS -->
-  <div style="display:flex; gap:10px; margin-bottom:50px;">
+  <div class="prescription-action-row" style="display:flex; gap:10px; margin-bottom:50px; flex-wrap:wrap;">
+    <button class="btn" type="button" id="btnSavePrescription" onclick="saveCurrentPrescriptionFromEditor()" style="background:#176b58;font-size:15px;padding:15px;flex:1;min-width:155px;">💾 Save Prescription</button>
     <button class="btn" id="btnDownload" onclick="downloadPDF()" style="background:#0f766e; font-size:15px; padding:15px; flex:1;">
       📥 Download PDF
     </button>
@@ -2356,7 +2357,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    list.replaceChildren();document.getElementById('historyTotal').textContent=records.length+(records.length===100?'+':'')+' saved records';
    const term=search.value.trim().toLocaleLowerCase();
    const found=records.filter(r=>[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
-   if(!found.length){const empty=el('div','history-empty');empty.append(el('span','','🗂️'),el('strong','',term?'No matching prescriptions':'Your prescription archive starts here'),el('p','',term?'Try a different patient name, phone or diagnosis.':'Save a completed prescription to keep a private record you can reopen later. Nothing is saved automatically.'));list.append(empty);return;}
+   if(!found.length){const empty=el('div','history-empty');empty.append(el('span','','🗂️'),el('strong','',term?'No matching prescriptions':'No prescriptions saved yet'),el('p','',term?'Try a different patient name, phone or diagnosis.':'Use Save Prescription in the editor to store a record you can reopen later.'));list.append(empty);return;}
    found.forEach(r=>{
      const card=el('article','history-record'),top=el('div','history-record-top'),icon=el('div','history-record-icon','▤'),main=el('div','history-record-main');
      main.append(el('strong','',r.patientName||'Unnamed patient'));
@@ -2383,10 +2384,10 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  async function refresh(){
    if(busy)return;busy=true;notify('Loading saved prescriptions…');list.replaceChildren(el('div','history-empty','Loading records…'));
    try{records=await window.historyCloud.list();notify(records.length?'Your latest saved prescriptions are ready.':'No prescriptions saved yet.');}
-   catch(error){records=[];notify('Unable to load history. Check Firestore rules and your connection. No patient data has been changed.',true);console.error('History load failed',error);}
+   catch(error){records=[];notify('Could not access saved records. Your Firebase permissions or connection may need attention.',true);console.error('History load failed',error);}
    finally{busy=false;render();}
  }
- document.getElementById('historySaveCurrent').addEventListener('click',async()=>{
+ async function saveCurrentRecord(){
    if(busy)return;
    const record=capture();
    if(!record.patientName){notify('Enter a patient name before saving this prescription.',true);return;}
@@ -2395,8 +2396,17 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    try{await window.historyCloud.save(record);notify('Prescription saved successfully.');}
    catch(error){notify('Save failed. Check Firestore permissions and connection. The prescription remains in the editor.',true);console.error('History save failed',error);}
    finally{busy=false;document.getElementById('historySaveCurrent').disabled=false;await refresh();}
- });
- document.getElementById('historyRefresh').addEventListener('click',refresh);
+ }
+ window.saveCurrentPrescriptionFromEditor=async()=>{
+   if(!document.getElementById('pName').value.trim()){
+     alert('Enter a patient name before saving.');
+     document.getElementById('pName').focus();return;
+   }
+   dialog.showModal();
+   await saveCurrentRecord();
+ };
+ document.getElementById('historySaveCurrent').addEventListener('click',saveCurrentRecord);
+  document.getElementById('historyRefresh').addEventListener('click',refresh);
  document.getElementById('historyClose').addEventListener('click',()=>dialog.close());
  document.getElementById('historyDone').addEventListener('click',()=>dialog.close());
  search.addEventListener('input',render);
