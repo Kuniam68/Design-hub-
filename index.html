@@ -776,7 +776,19 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .history-actions strong{font-size:19px;display:block}
 .history-actions small{font-size:12px;color:#668079;display:block;line-height:1.5;margin-top:4px}
 .history-primary{background:#0d7b70;color:#fff;border:0;border-radius:12px;padding:13px 16px;font:700 12px inherit;cursor:pointer;white-space:nowrap;box-shadow:0 6px 16px #0b766b24}
-.history-filters{display:flex;align-items:end;gap:10px;margin-bottom:17px}
+.history-filter-panel{background:linear-gradient(145deg,#fff,#eef8f4);border:1px solid #d9ebe3;border-radius:19px;padding:17px;margin-bottom:20px;box-shadow:0 8px 26px #0b61550a}
+.history-filter-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:12px}
+.history-filter-heading span{font-size:13px;font-weight:800;color:#194c42}
+.history-filter-heading small{font-size:11px;color:#718d83}
+.history-filter-tabs{display:flex;flex-wrap:wrap;gap:8px}
+.history-filter-tab{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #d6e7df;border-radius:999px;padding:10px 14px;min-height:40px;background:#fff;color:#426d61;font:700 12px inherit;cursor:pointer;transition:background .18s,border-color .18s,box-shadow .18s,transform .18s}
+.history-filter-tab:hover{border-color:#80bcae;transform:translateY(-1px)}
+.history-filter-tab.is-active{background:#08796d;border-color:#08796d;color:#fff;box-shadow:0 5px 13px #08796d2b}
+.history-filter-tab:focus-visible{outline:3px solid #18ab99;outline-offset:3px}
+.history-filter-search{display:flex;align-items:end;gap:10px;margin-top:14px}
+.history-filter-search #historyRefresh{border:1px solid #d3e4dd;background:#eaf2ee;color:#225d53;border-radius:10px;padding:12px 14px;font:700 12px inherit;cursor:pointer}
+@media(max-width:650px){.history-filter-panel{padding:13px}.history-filter-tabs{gap:7px}.history-filter-tab{padding:9px 11px;font-size:11px}.history-filter-search{flex-wrap:wrap}.history-filter-search .history-search-label{flex-basis:100%}.history-filter-search #historyRefresh{margin-left:auto}}
+@media(prefers-reduced-motion:reduce){.history-filter-tab{transition:none}.history-filter-tab:hover{transform:none}}
 .history-search-label{display:block;flex:1;font-size:11px;font-weight:700;color:#4d6c63}
 .history-search-label input{display:block;width:100%;min-width:0;margin-top:6px;padding:12px 14px;border:1px solid #d4e6de;border-radius:11px;background:#fff;font:inherit;font-size:13px;color:#173f39}
 .history-filters button,.history-footer button{border:1px solid #d3e4dd;background:#eaf2ee;color:#225d53;border-radius:10px;padding:12px 14px;font:700 12px inherit;cursor:pointer}
@@ -1206,7 +1218,18 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    <div><strong>Prescription archive</strong><small>Printed and downloaded prescriptions appear here automatically. Save important records to keep them.</small></div>
 
   </div>
-  <div class="history-filters"><select id="historyFilter" aria-label="Filter prescriptions"><option value="all">All records</option><option value="temporary">Temporary</option><option value="saved">Saved</option><option value="favorite">★ Favorites</option></select><label class="history-search-label" for="historySearch">Search records<input id="historySearch" type="search" placeholder="Search patient name, phone or diagnosis" autocomplete="off"></label><button type="button" id="historyRefresh">↻ Refresh</button></div>
+  <div class="history-filter-panel" aria-label="Prescription filters">
+   <div class="history-filter-heading"><span>Explore your records</span><small>Choose a collection</small></div>
+   <div class="history-filter-tabs" role="group" aria-label="Filter prescription history">
+    <button type="button" class="history-filter-tab is-active" data-history-filter="recent" aria-pressed="true"><span aria-hidden="true">◷</span> Recently Added</button>
+    <button type="button" class="history-filter-tab" data-history-filter="saved" aria-pressed="false"><span aria-hidden="true">✓</span> Saved</button>
+    <button type="button" class="history-filter-tab" data-history-filter="all" aria-pressed="false">All Records</button>
+    <button type="button" class="history-filter-tab" data-history-filter="temporary" aria-pressed="false">Temporary</button>
+    <button type="button" class="history-filter-tab" data-history-filter="favorite" aria-pressed="false"><span aria-hidden="true">★</span> Favorites</button>
+   </div>
+   <select id="historyFilter" aria-label="Filter prescriptions" hidden><option value="recent">Recently Added</option><option value="all">All records</option><option value="temporary">Temporary</option><option value="saved">Saved</option><option value="favorite">Favorites</option></select>
+   <div class="history-filter-search"><label class="history-search-label" for="historySearch">Search records<input id="historySearch" type="search" placeholder="Search patient name, phone or diagnosis" autocomplete="off"></label><button type="button" id="historyRefresh">↻ Refresh</button></div>
+  </div>
   <div id="historyList" class="history-list" aria-live="polite"></div>
   <p id="historyStatus" class="history-status" role="status" aria-live="polite"></p>
   <footer class="history-footer"><span>Temporary records expire after 24 hours. Save or favorite to keep them.</span><button type="button" id="historyDone">Close</button></footer>
@@ -2428,6 +2451,13 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  confirmation.addEventListener('click',event=>{if(event.target===confirmation)settleHistoryConfirmation(false);});
 
  const filter=document.getElementById("historyFilter");
+ const filterTabs=Array.from(document.querySelectorAll('[data-history-filter]'));
+ function setHistoryFilter(value){
+   filter.value=value;
+   filterTabs.forEach(tab=>{const selected=tab.dataset.historyFilter===value;tab.classList.toggle('is-active',selected);tab.setAttribute('aria-pressed',String(selected));});
+   render();
+ }
+ filterTabs.forEach(tab=>tab.addEventListener('click',()=>setHistoryFilter(tab.dataset.historyFilter)));
  let captureInFlight=null;
  let lastCaptureError='';
  const reportCapture=(message,error=false)=>{lastCaptureError=error?message:'';try{sessionStorage.setItem('mediscript-history-capture-error',lastCaptureError);}catch(_){};if(dialog.open)notify(message,error);};
@@ -2479,7 +2509,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  function render(){
    list.replaceChildren();document.getElementById('historyTotal').textContent=records.length+(records.length===100?'+':'')+' saved records';
    const term=search.value.trim().toLocaleLowerCase();
-   const found=records.filter(r=>(filter.value==='all'||(filter.value==='favorite'&&r.favorite)||(filter.value==='saved'&&r.saved)||(filter.value==='temporary'&&!r.saved&&!r.favorite))&&[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
+   const found=records.filter(r=>(filter.value==='all'||filter.value==='recent'||(filter.value==='favorite'&&r.favorite)||(filter.value==='saved'&&r.saved)||(filter.value==='temporary'&&!r.saved&&!r.favorite))&&[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
    if(!found.length){const empty=el('div','history-empty');empty.append(el('span','',loadFailed?'⚠️':'🗂️'),el('strong','',loadFailed?'History unavailable':term?'No matching prescriptions':'No prescriptions in history yet'),el('p','',loadFailed?'The app could not retrieve your records. Please check Firebase permissions and try Refresh.':term?'Try a different patient name, phone or diagnosis.':'Download or print a prescription to add it here automatically.'));list.append(empty);return;}
    found.forEach(r=>{
      const card=el('article','history-record'),top=el('div','history-record-top'),icon=el('div','history-record-icon','▤'),main=el('div','history-record-main');
@@ -2545,9 +2575,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  document.getElementById('historyClose').addEventListener('click',()=>dialog.close());
  document.getElementById('historyDone').addEventListener('click',()=>dialog.close());
  search.addEventListener('input',render);
- filter.addEventListener('change',render);
+ filter.addEventListener('change',()=>setHistoryFilter(filter.value));
  window.addEventListener('mediscript-history-error',e=>{console.warn(e.detail);if(dialog.open)notify(e.detail,true);else {const status=document.getElementById('historyStatus');if(status){status.textContent=e.detail;status.style.color='#b91c1c';} }});
- window.openPrescriptionHistory=async()=>{dialog.showModal();search.value='';filter.value='all';if(hasLoaded){render();notify('Checking for updates…');}await refresh();const previous=lastCaptureError||(()=>{try{return sessionStorage.getItem('mediscript-history-capture-error')||'';}catch(_){return '';}})();if(previous&&!loadFailed)notify(previous,true);};
+ window.openPrescriptionHistory=async()=>{dialog.showModal();search.value='';setHistoryFilter('recent');if(hasLoaded){render();notify('Checking for updates…');}await refresh();const previous=lastCaptureError||(()=>{try{return sessionStorage.getItem('mediscript-history-capture-error')||'';}catch(_){return '';}})();if(previous&&!loadFailed)notify(previous,true);};
 })();
 
 </script>
