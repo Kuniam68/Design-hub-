@@ -567,7 +567,10 @@
   <!-- ACTION BUTTONS -->
   <div style="display:flex; gap:10px; margin-bottom:50px;">
     <button class="btn" id="btnDownload" onclick="downloadPDF()" style="background:#0f766e; font-size:15px; padding:15px; flex:1;">
-      📥 Print & Download
+      📥 Download PDF
+    </button>
+    <button class="btn" type="button" onclick="window.print()" style="background:#0284c7; font-size:15px; padding:15px; flex:1;">
+      🖨️ Print A4
     </button>
   </div>
 </div>
@@ -1325,33 +1328,18 @@
       const fileName = `Prescription_${patientName}_${new Date().toISOString().slice(0,10)}.pdf`;
 
       const blob = pdf.output('blob');
-
       const url = URL.createObjectURL(blob);
-      let handled = false;
 
-      // Hosted viewers (if any) provide a download capability; use it when present
-      try {
-        const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
-        if (dl) { await dl.save({ filename: fileName, data: blob }); handled = true; }
-      } catch (e) { handled = true; }
-
-      if (!handled) {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        if (isIOS) {
-          window.open(url, '_blank'); // iOS: open PDF, then Share > Save to Files
-        } else {
-          // Windows / Mac / Linux / Android (Chrome, Edge, Firefox, Samsung Internet)
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = fileName;
-          a.rel = 'noopener';
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        }
-      }
+      // Request a named PDF download on iPad/iPhone as well as desktop and Android.
+      // iOS may show a confirmation or open the PDF depending on browser settings.
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 120000);
 
     } catch (err) {
