@@ -1176,7 +1176,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 </script>
 <dialog class="history-confirm" id="historyConfirmDialog" aria-labelledby="historyConfirmTitle" aria-describedby="historyConfirmDescription">
  <div class="history-confirm-inner">
-  <div class="history-confirm-icon" id="historyConfirmIcon" aria-hidden="true">↗</div>
+  <div class="history-confirm-icon" id="historyConfirmIcon" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg></div>
   <h3 id="historyConfirmTitle">Open prescription?</h3>
   <p id="historyConfirmDescription"></p>
   <div class="history-confirm-actions">
@@ -2397,7 +2397,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    if(confirmation.open)return Promise.resolve(false);
    confirmation.dataset.kind=kind;
    const name=String(patientName||'this patient').slice(0,160);
-   confirmIcon.textContent=kind==='delete'?'⌫':'↗';
+   confirmIcon.innerHTML=kind==='delete'
+     ?'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 10v6M14 10v6"/></svg>'
+     :'<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>';
    confirmTitle.textContent=kind==='delete'?'Delete this prescription?':'Open this prescription?';
    confirmDescription.textContent=kind==='delete'
      ?'Permanently delete the prescription for '+name+'? This action cannot be undone.'
