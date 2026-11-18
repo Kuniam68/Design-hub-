@@ -158,8 +158,6 @@ window.saveDoctorProfileToCloud=async function(){
 };
 onAuthStateChanged(auth,user=>{
   if(!user){location.replace('./login.html');return;}
-  const account=document.getElementById('accountName');
-  if(account) account.textContent=user.displayName||user.email||'Doctor account';
   const headerAccount=document.getElementById('workspaceHeaderUser');
   if(headerAccount) headerAccount.textContent=user.displayName||user.email||'Doctor account';
   document.getElementById('auth-visibility')?.remove();
@@ -1267,10 +1265,6 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <div class="panel-header">
     <h2>MediScript Pro</h2>
     <p>Ultimate e-Prescription System</p>
-    <div class="account-toolbar" aria-label="Account options">
-      <span id="accountName" class="account-name">Doctor account</span>
-      <button id="signOutButton" class="account-signout" type="button" onclick="mediScriptSignOut()">Sign out</button>
-    </div>
   </div>
 
   <!-- PROFILE SECTION -->
