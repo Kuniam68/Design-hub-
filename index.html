@@ -36,10 +36,12 @@ async function loadDoctorProfile(user){
     showProfileStatus('Could not load profile. Check your connection and Firestore access rules.',true);
   }
 }
+window.isDoctorProfileReady=()=>!!auth.currentUser&&profileLoadedFor===auth.currentUser.uid;
+window.getDoctorAccountEmail=()=>auth.currentUser?.email||'';
 window.saveDoctorProfileToCloud=async function(){
   const user=auth.currentUser;
-  if(!user){showProfileStatus('Please sign in first.',true);return;}
-  if(profileLoadedFor!==user.uid){showProfileStatus('Profile has not loaded successfully. Please reload before saving.',true);return;}
+  if(!user){showProfileStatus('Please sign in first.',true);return false;}
+  if(profileLoadedFor!==user.uid){showProfileStatus('Profile has not loaded successfully. Please reload before saving.',true);return false;}
   const button=document.getElementById('profileSaveButton');
   const data=Object.fromEntries(profileFields.map(id=>[id,document.getElementById(id)?.value.trim()||'']));
   if(button)button.disabled=true;
@@ -47,9 +49,11 @@ window.saveDoctorProfileToCloud=async function(){
   try{
     await setDoc(doc(db,'doctors',user.uid),{...data,updatedAt:serverTimestamp()},{merge:true});
     showProfileStatus('Profile saved to your account. It will load when you sign in again.');
+    return true;
   }catch(error){
     console.error('Profile save failed:',error);
     showProfileStatus('Could not save. Check your connection and Firestore permissions.',true);
+    return false;
   }finally{if(button)button.disabled=false;}
 };
 onAuthStateChanged(auth,user=>{
@@ -417,6 +421,40 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 @media(prefers-reduced-motion:reduce){.new-rx-dialog,.new-rx-dialog::backdrop{animation:none}}
 @media print{.new-rx-dialog{display:none!important}}
 </style>
+<style id="my-profile-workspace-styles">
+.my-profile-dialog{border:0;border-radius:22px;padding:0;width:min(680px,calc(100vw - 24px));max-height:calc(100dvh - 28px);overflow:auto;margin:auto;background:#f8fbfa;color:#173b35;font-family:inherit;box-shadow:0 28px 90px rgba(5,34,31,.32);animation:profileEnter .24s ease-out}
+.my-profile-dialog::backdrop{background:rgba(5,32,30,.62);backdrop-filter:blur(4px)}
+.my-profile-head{background:linear-gradient(125deg,#075f57,#108779);color:white;padding:25px 26px 23px;position:relative}
+.my-profile-head small{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;opacity:.85}
+.my-profile-head h2{font-size:25px;margin:5px 38px 5px 0;line-height:1.25}
+.my-profile-head p{font-size:12px;line-height:1.6;opacity:.88;margin:0}
+.my-profile-close{position:absolute;right:17px;top:17px;border:1px solid #ffffff60;background:#ffffff25;color:white;border-radius:10px;width:36px;height:36px;font-size:23px;cursor:pointer}
+.my-profile-body{padding:22px 26px 26px}
+.my-profile-avatar{width:52px;height:52px;display:grid;place-items:center;border-radius:17px;background:#d7f3e8;color:#0d6b5c;font-size:25px;font-weight:800;flex:none}
+.my-profile-identity{display:flex;align-items:center;gap:13px;padding:13px;background:#fff;border:1px solid #dbeae4;border-radius:14px;margin-bottom:20px}
+.my-profile-identity strong{display:block;font-size:15px;overflow-wrap:anywhere}
+.my-profile-identity span{display:block;font-size:11px;color:#627b75;overflow-wrap:anywhere}
+.my-profile-section{margin:0 0 18px;padding:0;border:0}
+.my-profile-section legend{font-size:13px;font-weight:800;color:#12695f;margin-bottom:12px;padding:0}
+.my-profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.my-profile-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.my-profile-field.full{grid-column:1/-1}
+.my-profile-field label{font-size:11px;font-weight:700;color:#49635d}
+.my-profile-field input,.my-profile-field textarea{width:100%;min-width:0;border:1px solid #cbded7;border-radius:10px;background:white;color:#183d39;padding:11px 12px;font:inherit;font-size:13px;outline:none}
+.my-profile-field textarea{min-height:68px;resize:vertical}
+.my-profile-field input:focus,.my-profile-field textarea:focus{border-color:#0e8777;box-shadow:0 0 0 3px #0e877720}
+.my-profile-status{font-size:12px;line-height:1.5;color:#426b60;min-height:19px;margin:0 0 14px}
+.my-profile-actions{display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #dbeae4;padding-top:17px}
+.my-profile-actions button{border:0;border-radius:11px;padding:12px 19px;min-height:45px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.my-profile-cancel{background:#e7efec;color:#24594f}
+.my-profile-save{background:#0c766a;color:white;box-shadow:0 5px 15px #0c766a26}
+.my-profile-actions button:disabled{opacity:.6;cursor:wait}
+.my-profile-dialog button:focus-visible{outline:3px solid #13a395;outline-offset:2px}
+@keyframes profileEnter{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@media(max-width:540px){.my-profile-head{padding:22px 19px}.my-profile-body{padding:19px}.my-profile-grid{grid-template-columns:1fr}.my-profile-field.full{grid-column:auto}.my-profile-actions button{flex:1;padding:12px 8px}}
+@media(prefers-reduced-motion:reduce){.my-profile-dialog{animation:none}}
+@media print{.my-profile-dialog{display:none!important}}
+</style>
 </head>
 <body>
 <header class="workspace-header" aria-label="MediScript Pro navigation">
@@ -451,7 +489,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!drawer.hidden)toggle(false)});
  drawer.addEventListener('click',e=>{const item=e.target.closest('[data-workspace-action]');if(!item)return;const action=item.dataset.workspaceAction;
  if(action==='logout'){toggle(false);window.mediScriptSignOut();return;}
- if(action==='profile'){toggle(false);document.getElementById('doctor-profile-section')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
+ if(action==='profile'){toggle(false);window.openMyProfile();return;}
  if(action==='prescription'){toggle(false);window.startNewPrescription();return;}
  notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
  });
@@ -471,6 +509,109 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     </div>
   </div>
 </dialog>
+<dialog id="myProfileDialog" class="my-profile-dialog" aria-labelledby="myProfileTitle">
+  <div class="my-profile-head">
+    <button type="button" class="my-profile-close" id="myProfileClose" aria-label="Close My Profile">×</button>
+    <small>Professional workspace</small>
+    <h2 id="myProfileTitle">My Profile</h2>
+    <p>Manage the professional details shown on your prescriptions.</p>
+  </div>
+  <div class="my-profile-body">
+    <div class="my-profile-identity">
+      <div class="my-profile-avatar" id="myProfileAvatar" aria-hidden="true">✚</div>
+      <div><strong id="myProfileDisplayName">Doctor profile</strong><span id="myProfileAccount">Signed-in account</span></div>
+    </div>
+    <form id="myProfileForm">
+      <fieldset class="my-profile-section">
+        <legend>01 · Professional identity</legend>
+        <div class="my-profile-grid">
+          <div class="my-profile-field"><label for="mp-dName">Doctor name</label><input id="mp-dName" name="dName" autocomplete="name" maxlength="140" placeholder="Dr. Name"></div>
+          <div class="my-profile-field"><label for="mp-dReg">Medical registration number</label><input id="mp-dReg" name="dReg" maxlength="100" placeholder="Registration number"></div>
+          <div class="my-profile-field full"><label for="mp-dDegrees">Degrees, qualifications &amp; title</label><textarea id="mp-dDegrees" name="dDegrees" maxlength="800" placeholder="MBBS, MD, Specialist…"></textarea></div>
+        </div>
+      </fieldset>
+      <fieldset class="my-profile-section">
+        <legend>02 · Contact details</legend>
+        <div class="my-profile-grid">
+          <div class="my-profile-field"><label for="mp-dPhone">Professional phone</label><input id="mp-dPhone" name="dPhone" type="tel" maxlength="60" autocomplete="tel" placeholder="Phone number"></div>
+          <div class="my-profile-field"><label for="mp-dEmail">Professional email</label><input id="mp-dEmail" name="dEmail" type="email" maxlength="254" autocomplete="email" placeholder="doctor@example.com"></div>
+        </div>
+      </fieldset>
+      <fieldset class="my-profile-section">
+        <legend>03 · Current hospital or chamber</legend>
+        <div class="my-profile-grid">
+          <div class="my-profile-field"><label for="mp-cHospital">Hospital / chamber name</label><input id="mp-cHospital" name="cHospital" maxlength="200" placeholder="Hospital or chamber"></div>
+          <div class="my-profile-field"><label for="mp-cLocation">Location / address</label><input id="mp-cLocation" name="cLocation" maxlength="300" placeholder="Location or address"></div>
+        </div>
+      </fieldset>
+      <p class="my-profile-status" id="myProfileStatus" role="status" aria-live="polite">Your profile is private to your signed-in account.</p>
+      <div class="my-profile-actions"><button type="button" class="my-profile-cancel" id="myProfileCancel">Cancel</button><button type="submit" class="my-profile-save" id="myProfileSave">Save Profile</button></div>
+    </form>
+  </div>
+</dialog>
+<script id="my-profile-workspace-script">
+(function(){
+  const dialog=document.getElementById('myProfileDialog'),form=document.getElementById('myProfileForm');
+  const fields=['dName','dReg','dDegrees','dPhone','dEmail','cHospital','cLocation'];
+  const status=document.getElementById('myProfileStatus'),save=document.getElementById('myProfileSave');
+  let initial={};
+  const read=()=>Object.fromEntries(fields.map(id=>[id,form.elements.namedItem(id).value]));
+  const dirty=()=>fields.some(id=>form.elements.namedItem(id).value!==initial[id]);
+  function close(){
+    if(dirty()&&!window.confirm('Discard your unsaved profile edits?'))return;
+    dialog.close();
+  }
+  document.getElementById('myProfileClose').addEventListener('click',close);
+  document.getElementById('myProfileCancel').addEventListener('click',close);
+  dialog.addEventListener('cancel',event=>{if(dirty()){event.preventDefault();close();}});
+  window.openMyProfile=function(){
+    if(typeof dialog.showModal!=='function'){document.getElementById('doctor-profile-section')?.scrollIntoView({behavior:'smooth'});return;}
+    initial=Object.fromEntries(fields.map(id=>[id,document.getElementById(id).value]));
+    fields.forEach(id=>form.elements.namedItem(id).value=initial[id]);
+    const name=initial.dName.trim()||'Doctor profile';
+    document.getElementById('myProfileDisplayName').textContent=name;
+    document.getElementById('myProfileAvatar').textContent=name.replace(/^Dr\.?\s*/i,'').trim().charAt(0).toUpperCase()||'✚';
+    document.getElementById('myProfileAccount').textContent=window.getDoctorAccountEmail?.()||'Signed-in account';
+    const ready=window.isDoctorProfileReady?.()===true;
+    save.disabled=!ready;
+    status.textContent=ready?'Changes are saved only when you select Save Profile.':'Your profile is still loading or could not be loaded. Saving is unavailable until it loads successfully.';
+    status.style.color=ready?'#426b60':'#a33f2f';
+    dialog.showModal();
+  };
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(!form.reportValidity())return;
+    if(window.isDoctorProfileReady?.()!==true){status.textContent='Profile not ready. Please reopen after it loads.';return;}
+    if(typeof window.saveDoctorProfileToCloud!=='function')return;
+    const values=read();
+    const original=Object.fromEntries(fields.map(id=>[id,document.getElementById(id).value]));
+    save.disabled=true;
+    status.textContent='Saving securely to your account…';
+    fields.forEach(id=>document.getElementById(id).value=values[id]);
+    try{
+      const ok=await window.saveDoctorProfileToCloud();
+      if(!ok){
+        fields.forEach(id=>document.getElementById(id).value=original[id]);
+        status.textContent='Save failed. Your changes are still in this window; please retry.';
+        status.style.color='#b91c1c';
+        window.updatePreview?.();
+        return;
+      }
+      window.updatePreview?.();
+      initial=values;
+      status.textContent='Profile saved successfully.';
+      status.style.color='#176451';
+      document.getElementById('myProfileDisplayName').textContent=values.dName||'Doctor profile';
+      dialog.close();
+    }catch(error){
+      fields.forEach(id=>document.getElementById(id).value=original[id]);
+      window.updatePreview?.();
+      status.textContent='Unable to save right now. Please retry.';
+      status.style.color='#b91c1c';
+    }finally{save.disabled=false;}
+  });
+})();
+</script>
 <!-- ================= LEFT PANEL: INPUTS ================= -->
 <div class="form-panel">
 
