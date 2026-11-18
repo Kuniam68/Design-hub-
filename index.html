@@ -14,6 +14,8 @@ onAuthStateChanged(auth,user=>{
   if(!user){location.replace('./login.html');return;}
   const account=document.getElementById('accountName');
   if(account) account.textContent=user.displayName||user.email||'Doctor account';
+  const headerAccount=document.getElementById('workspaceHeaderUser');
+  if(headerAccount) headerAccount.textContent=user.displayName||user.email||'Doctor account';
   document.getElementById('auth-visibility')?.remove();
 },()=>{location.replace('./login.html')});
 window.mediScriptSignOut=async function(){
@@ -310,8 +312,74 @@ window.mediScriptSignOut=async function(){
 .account-signout:focus-visible{outline:3px solid #fff;outline-offset:2px}
 @media print{.account-toolbar{display:none!important}}
 </style>
+<style id="workspace-navigation-styles">
+:root{--workspace-header-height:64px}
+body{padding-top:var(--workspace-header-height)!important;height:100dvh!important}
+.workspace-header{position:fixed;inset:0 0 auto 0;height:var(--workspace-header-height);z-index:1000;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 clamp(12px,2.5vw,30px);background:#f8fcfa;border-bottom:1px solid #d8e9e3;box-shadow:0 3px 16px #174d4520;color:#174d47;font-family:'Poppins',sans-serif}
+.workspace-header-left,.workspace-header-right{display:flex;align-items:center;gap:12px;min-width:0}
+.workspace-brand{font-weight:700;font-size:clamp(14px,2vw,18px);white-space:nowrap}
+.workspace-brand small{display:block;font-size:10px;color:#6d8780;font-weight:500}
+.workspace-menu-button{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border:1px solid #c9e2d9;background:#e7f4ef;color:#16685e;border-radius:11px;font-size:23px;cursor:pointer}
+.workspace-header-user{max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:600}
+.workspace-header-logout{background:#176e64;color:#fff;border:0;border-radius:10px;padding:10px 13px;font-size:12px;font-weight:700;cursor:pointer}
+.workspace-backdrop{position:fixed;inset:var(--workspace-header-height) 0 0;background:#112b2a80;z-index:1001}
+.workspace-drawer{position:fixed;top:var(--workspace-header-height);bottom:0;left:0;width:min(340px,90vw);z-index:1002;overflow-y:auto;background:#fff;box-shadow:12px 0 30px #113b3426;padding:22px 16px 28px;color:#24433f;font-family:'Poppins',sans-serif}
+.workspace-drawer[hidden],.workspace-backdrop[hidden]{display:none!important}
+.workspace-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:0 8px 15px;border-bottom:1px solid #e3eeea;margin-bottom:12px;font-weight:700}
+.workspace-close{border:0;background:#edf5f2;border-radius:9px;width:34px;height:34px;cursor:pointer;font-size:21px;color:#205e56}
+.workspace-nav-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;border:0;border-radius:11px;padding:13px 12px;color:#244a44;font:600 13px 'Poppins',sans-serif;cursor:pointer}
+.workspace-nav-item:hover,.workspace-nav-item:focus-visible{background:#eaf5f0;outline-offset:1px}
+.workspace-nav-item span:first-child{font-size:19px;width:26px;text-align:center}
+.workspace-nav-item small{margin-left:auto;font-size:10px;font-weight:500;color:#708a83}
+.workspace-nav-item.planned{color:#657b77}
+.workspace-nav-separator{border-top:1px solid #e4eee9;margin:13px 8px}
+.workspace-menu-notice{margin:12px 8px 0;padding:12px;background:#edf7f3;border-radius:10px;font-size:12px;line-height:1.5;color:#235b51}
+.form-panel,.preview-panel{height:calc(100dvh - var(--workspace-header-height))!important}
+#doctor-profile-section{scroll-margin-top:85px}
+@media(max-width:560px){.workspace-header{padding:0 10px}.workspace-header-user{display:none}.workspace-brand small{display:none}.workspace-header-left,.workspace-header-right{gap:8px}.workspace-header-logout{padding:9px 10px}}
+@media print{body{padding-top:0!important;height:auto!important}.workspace-header,.workspace-drawer,.workspace-backdrop{display:none!important}.form-panel,.preview-panel{height:auto!important}}
+</style>
 </head>
 <body>
+<header class="workspace-header" aria-label="MediScript Pro navigation">
+  <div class="workspace-header-left">
+    <button type="button" class="workspace-menu-button" id="workspaceMenuButton" aria-label="Open workspace menu" aria-controls="workspaceDrawer" aria-expanded="false">☰</button>
+    <div class="workspace-brand">✚ MediScript Pro <small>Professional prescription workspace</small></div>
+  </div>
+  <div class="workspace-header-right">
+    <span class="workspace-header-user" id="workspaceHeaderUser">Doctor account</span>
+    <button type="button" class="workspace-header-logout" onclick="mediScriptSignOut()">Sign out</button>
+  </div>
+</header>
+<div class="workspace-backdrop" id="workspaceBackdrop" hidden></div>
+<nav class="workspace-drawer" id="workspaceDrawer" aria-label="Workspace menu" hidden>
+  <div class="workspace-drawer-head"><span>Workspace menu</span><button type="button" class="workspace-close" id="workspaceCloseButton" aria-label="Close menu">×</button></div>
+  <button type="button" class="workspace-nav-item" data-workspace-action="prescription"><span>✚</span>New Prescription</button>
+  <button type="button" class="workspace-nav-item" data-workspace-action="profile"><span>👤</span>My Profile</button>
+  <button type="button" class="workspace-nav-item planned" data-workspace-action="locations"><span>🏥</span>Hospitals &amp; Chambers <small>Planned</small></button>
+  <button type="button" class="workspace-nav-item planned" data-workspace-action="history"><span>🕘</span>Prescription History <small>Planned</small></button>
+  <button type="button" class="workspace-nav-item planned" data-workspace-action="patients"><span>👥</span>Patient Directory <small>Planned</small></button>
+  <button type="button" class="workspace-nav-item planned" data-workspace-action="templates"><span>📋</span>Templates &amp; Medicine Favorites <small>Planned</small></button>
+  <button type="button" class="workspace-nav-item planned" data-workspace-action="settings"><span>⚙️</span>Settings &amp; Appearance <small>Planned</small></button>
+  <div class="workspace-nav-separator"></div>
+  <button type="button" class="workspace-nav-item" data-workspace-action="logout"><span>↪</span>Sign out</button>
+  <p class="workspace-menu-notice" id="workspaceMenuNotice" role="status" aria-live="polite">New features will be built and tested here before merging into main.</p>
+</nav>
+<script>
+(function(){
+ const menu=document.getElementById('workspaceMenuButton'),drawer=document.getElementById('workspaceDrawer'),backdrop=document.getElementById('workspaceBackdrop'),close=document.getElementById('workspaceCloseButton'),notice=document.getElementById('workspaceMenuNotice');
+ function toggle(open){drawer.hidden=!open;backdrop.hidden=!open;menu.setAttribute('aria-expanded',String(open));menu.setAttribute('aria-label',open?'Close workspace menu':'Open workspace menu');if(open)close.focus();else menu.focus();}
+ menu.addEventListener('click',()=>toggle(drawer.hidden));close.addEventListener('click',()=>toggle(false));backdrop.addEventListener('click',()=>toggle(false));
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!drawer.hidden)toggle(false)});
+ drawer.addEventListener('click',e=>{const item=e.target.closest('[data-workspace-action]');if(!item)return;const action=item.dataset.workspaceAction;
+ if(action==='logout'){toggle(false);window.mediScriptSignOut();return;}
+ if(action==='profile'){toggle(false);document.getElementById('doctor-profile-section')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
+ if(action==='prescription'){toggle(false);document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});return;}
+ notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
+ });
+})();
+</script>
+
 
 <!-- ================= LEFT PANEL: INPUTS ================= -->
 <div class="form-panel">
@@ -326,7 +394,7 @@ window.mediScriptSignOut=async function(){
   </div>
 
   <!-- PROFILE SECTION -->
-  <div class="section-card">
+  <div class="section-card" id="doctor-profile-section">
     <div class="section-title">
       Doctor & Chamber Profile
       <button class="btn btn-sm" onclick="saveProfile()">💾 Save as Default</button>
