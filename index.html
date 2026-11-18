@@ -7,10 +7,21 @@
 <style id="auth-visibility">body{visibility:hidden!important}</style>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-import {getAuth,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import {getAuth,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 import {firebaseConfig} from './firebase-config.js';
 const auth=getAuth(initializeApp(firebaseConfig));
-onAuthStateChanged(auth,user=>{if(!user){location.replace('./login.html');return;}document.getElementById('auth-visibility')?.remove();},()=>{location.replace('./login.html')});
+onAuthStateChanged(auth,user=>{
+  if(!user){location.replace('./login.html');return;}
+  const account=document.getElementById('accountName');
+  if(account) account.textContent=user.displayName||user.email||'Doctor account';
+  document.getElementById('auth-visibility')?.remove();
+},()=>{location.replace('./login.html')});
+window.mediScriptSignOut=async function(){
+  const button=document.getElementById('signOutButton');
+  if(button){button.disabled=true;button.textContent='Signing out…';}
+  try{await signOut(auth);location.replace('./login.html');}
+  catch(error){if(button){button.disabled=false;button.textContent='Sign out';}alert('Sign out failed. Please try again.');}
+};
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -291,6 +302,14 @@ onAuthStateChanged(auth,user=>{if(!user){location.replace('./login.html');return
   .ios-overlay .box a { display: inline-block; background: var(--primary); color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px; margin-top: 6px; }
   .ios-overlay .box button { background: #e2e8f0; color: #0f172a; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; margin-top: 10px; cursor: pointer; }
 </style>
+<style id="account-toolbar-style">
+.account-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid #ffffff50;flex-wrap:wrap}
+.account-name{font-size:12px;font-weight:600;color:#f0fdfa;overflow-wrap:anywhere}
+.account-signout{border:1px solid #ffffffa8;background:#ffffffed;color:#115e59;border-radius:8px;padding:8px 13px;font:600 12px 'Poppins',sans-serif;cursor:pointer}
+.account-signout:disabled{opacity:.65;cursor:wait}
+.account-signout:focus-visible{outline:3px solid #fff;outline-offset:2px}
+@media print{.account-toolbar{display:none!important}}
+</style>
 </head>
 <body>
 
@@ -300,6 +319,10 @@ onAuthStateChanged(auth,user=>{if(!user){location.replace('./login.html');return
   <div class="panel-header">
     <h2>MediScript Pro</h2>
     <p>Ultimate e-Prescription System</p>
+    <div class="account-toolbar" aria-label="Account options">
+      <span id="accountName" class="account-name">Doctor account</span>
+      <button id="signOutButton" class="account-signout" type="button" onclick="mediScriptSignOut()">Sign out</button>
+    </div>
   </div>
 
   <!-- PROFILE SECTION -->
