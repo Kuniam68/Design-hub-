@@ -2454,7 +2454,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  async function refresh(){
    if(busy)return;busy=true;notify('Loading prescription history…');list.replaceChildren(el('div','history-empty','Loading records…'));
    try{records=await window.historyCloud.list();loadFailed=false;notify(records.length?'Your prescription history is ready.':'No prescriptions in history yet.');}
-   catch(error){records=[];loadFailed=true;notify(error?.code==='permission-denied'?'Firebase denied access to prescription records. The Firestore security rules must be updated securely.':'Could not access prescription history. Please check your connection and Firebase permissions.',true);console.error('History load failed',error);}
+   catch(error){records=[];loadFailed=true;const code=String(error?.code||'unknown');const detail=String(error?.message||'').slice(0,240);notify('History load failed ['+code+']: '+detail,true);console.error('History load failed',error);}
    finally{busy=false;render();}
  }
  window.capturePrescriptionToHistory=async()=>{
@@ -2463,7 +2463,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    if(captureInFlight)return captureInFlight;
    captureInFlight=window.historyCloud.capture(record).catch(error=>{
      console.error('Automatic prescription history capture failed:',error);
-     window.dispatchEvent(new CustomEvent('mediscript-history-error',{detail:error?.code==='permission-denied'?'PDF downloaded, but Firebase denied access to History. Firestore security rules need updating.':'PDF downloaded, but History could not be updated. Check Firebase permissions and your connection.'}));
+     window.dispatchEvent(new CustomEvent('mediscript-history-error',{detail:'History capture failed ['+String(error?.code||'unknown')+']: '+String(error?.message||'').slice(0,220)}));
    }).finally(()=>{captureInFlight=null;});
    return captureInFlight;
  };
@@ -2472,7 +2472,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  document.getElementById('historyDone').addEventListener('click',()=>dialog.close());
  search.addEventListener('input',render);
  filter.addEventListener('change',render);
- window.addEventListener('mediscript-history-error',e=>{if(dialog.open)notify(e.detail,true);else alert(e.detail);});
+ window.addEventListener('mediscript-history-error',e=>{console.warn(e.detail);if(dialog.open)notify(e.detail,true);else {const status=document.getElementById('historyStatus');if(status){status.textContent=e.detail;status.style.color='#b91c1c';} }});
  window.openPrescriptionHistory=()=>{dialog.showModal();search.value='';filter.value='all';refresh();};
 })();
 
