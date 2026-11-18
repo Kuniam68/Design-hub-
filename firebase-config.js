@@ -1,0 +1,1 @@
+export const firebaseConfig = {apiKey:"AIzaSyBBZ_JZZ4GiKNi-RSXkzUXNzdbXRzgW60",authDomain:"mediscript-pro-49245.firebaseapp.com",projectId:"mediscript-pro-49245",storageBucket:"mediscript-pro-49245.firebasestorage.app",messagingSenderId:"607233663665",appId:"1:607233663665:web:9fd5c212e9044a9cb13890"};
