@@ -455,6 +455,36 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 @media(prefers-reduced-motion:reduce){.my-profile-dialog{animation:none}}
 @media print{.my-profile-dialog{display:none!important}}
 </style>
+<style id="my-profile-v2-styles">
+/* Profile V2 visual layer: existing field names, cloud save and handlers stay unchanged. */
+.my-profile-dialog{width:min(760px,calc(100vw - 24px));border-radius:25px;background:#f3f7f7;box-shadow:0 35px 100px #092e3550;animation:profileV2In .32s cubic-bezier(.2,1,.3,1)}
+.my-profile-head{background:linear-gradient(125deg,#0c2733,#115b61 62%,#168778);padding:30px 30px 56px;overflow:hidden}
+.my-profile-head:after{content:"✚";position:absolute;right:62px;top:20px;font-size:125px;line-height:1;color:#ffffff0c;pointer-events:none}
+.my-profile-head small{color:#9ce8d7;font-weight:800;letter-spacing:2px}
+.my-profile-head h2{font-size:30px;letter-spacing:-.8px}
+.my-profile-body{padding:0 25px 25px}
+.my-profile-identity{position:relative;margin:-37px 0 20px;padding:19px 20px;border-radius:19px;background:#fff;box-shadow:0 10px 28px #133c3a16;border:1px solid #e2efeb;gap:17px}
+.my-profile-avatar{width:66px;height:66px;border-radius:20px;background:linear-gradient(145deg,#0f776f,#18a38c);color:#fff;font-size:29px;box-shadow:0 6px 15px #0e807c33}
+.my-profile-identity strong{font-size:18px;color:#183a3c}
+.my-profile-identity span{font-size:12px}
+.my-profile-idtag{margin-left:auto;flex:none;border-radius:20px;padding:7px 11px;background:#e8f7f0;color:#18755c;font-size:10px;font-weight:800;letter-spacing:.6px}
+.my-profile-tabs{display:flex;gap:7px;padding:5px;background:#e5eeee;border-radius:14px;margin:0 0 20px}
+.my-profile-tab{flex:1;min-width:0;border:0;border-radius:10px;padding:12px 6px;background:transparent;color:#607773;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:background .18s,color .18s,box-shadow .18s}
+.my-profile-tab[aria-selected="true"]{background:#fff;color:#0b7367;box-shadow:0 3px 10px #173d3a12}
+.my-profile-tab:focus-visible{outline:3px solid #0e8d7e;outline-offset:2px}
+.my-profile-section{background:white;border:1px solid #e0ebe7;border-radius:17px;padding:20px;margin:0 0 18px}
+.my-profile-section legend{float:left;width:100%;margin-bottom:15px;font-size:14px;color:#174d4a}
+.my-profile-section legend:after{content:"";display:block;clear:both}
+.my-profile-section .my-profile-grid{clear:both}
+.my-profile-field input,.my-profile-field textarea{background:#f9fcfb;border-color:#d8e7e1;padding:13px}
+.my-profile-status{margin:4px 0 13px}
+.my-profile-actions{background:#f3f7f7;position:sticky;bottom:-25px;padding:16px 0 0;z-index:1}
+.my-profile-save{background:linear-gradient(135deg,#0c8174,#0c615e);box-shadow:0 7px 18px #0b7d7230}
+.my-profile-section[hidden]{display:none!important}
+@keyframes profileV2In{from{opacity:0;transform:translateY(22px) scale(.96)}to{opacity:1;transform:none}}
+@media(max-width:540px){.my-profile-head{padding:24px 20px 55px}.my-profile-head h2{font-size:26px}.my-profile-body{padding:0 15px 18px}.my-profile-identity{padding:14px;gap:10px}.my-profile-avatar{width:52px;height:52px;font-size:24px}.my-profile-identity strong{font-size:14px}.my-profile-idtag{font-size:9px;padding:6px}.my-profile-tab{font-size:10px;padding:12px 3px}.my-profile-section{padding:16px}.my-profile-actions{bottom:-18px}}
+@media(prefers-reduced-motion:reduce){.my-profile-dialog{animation:none}.my-profile-tab{transition:none}}
+</style>
 </head>
 <body>
 <header class="workspace-header" aria-label="MediScript Pro navigation">
@@ -519,10 +549,15 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <div class="my-profile-body">
     <div class="my-profile-identity">
       <div class="my-profile-avatar" id="myProfileAvatar" aria-hidden="true">✚</div>
-      <div><strong id="myProfileDisplayName">Doctor profile</strong><span id="myProfileAccount">Signed-in account</span></div>
+      <div><strong id="myProfileDisplayName">Doctor profile</strong><span id="myProfileAccount">Signed-in account</span></div><span class="my-profile-idtag">● VERIFIED SESSION</span>
     </div>
     <form id="myProfileForm">
-      <fieldset class="my-profile-section">
+      <div class="my-profile-tabs" role="tablist" aria-label="Profile sections">
+        <button type="button" class="my-profile-tab" id="mpTabIdentity" role="tab" aria-selected="true" aria-controls="mpSectionIdentity" data-profile-tab="identity">✚ Identity</button>
+        <button type="button" class="my-profile-tab" id="mpTabContact" role="tab" aria-selected="false" aria-controls="mpSectionContact" data-profile-tab="contact" tabindex="-1">☎ Contact</button>
+        <button type="button" class="my-profile-tab" id="mpTabChamber" role="tab" aria-selected="false" aria-controls="mpSectionChamber" data-profile-tab="chamber" tabindex="-1">⌂ Chamber</button>
+      </div>
+      <fieldset class="my-profile-section" id="mpSectionIdentity" role="tabpanel" aria-labelledby="mpTabIdentity">
         <legend>01 · Professional identity</legend>
         <div class="my-profile-grid">
           <div class="my-profile-field"><label for="mp-dName">Doctor name</label><input id="mp-dName" name="dName" autocomplete="name" maxlength="140" placeholder="Dr. Name"></div>
@@ -530,14 +565,14 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
           <div class="my-profile-field full"><label for="mp-dDegrees">Degrees, qualifications &amp; title</label><textarea id="mp-dDegrees" name="dDegrees" maxlength="800" placeholder="MBBS, MD, Specialist…"></textarea></div>
         </div>
       </fieldset>
-      <fieldset class="my-profile-section">
+      <fieldset class="my-profile-section" id="mpSectionContact" role="tabpanel" aria-labelledby="mpTabContact" hidden>
         <legend>02 · Contact details</legend>
         <div class="my-profile-grid">
           <div class="my-profile-field"><label for="mp-dPhone">Professional phone</label><input id="mp-dPhone" name="dPhone" type="tel" maxlength="60" autocomplete="tel" placeholder="Phone number"></div>
           <div class="my-profile-field"><label for="mp-dEmail">Professional email</label><input id="mp-dEmail" name="dEmail" type="email" maxlength="254" autocomplete="email" placeholder="doctor@example.com"></div>
         </div>
       </fieldset>
-      <fieldset class="my-profile-section">
+      <fieldset class="my-profile-section" id="mpSectionChamber" role="tabpanel" aria-labelledby="mpTabChamber" hidden>
         <legend>03 · Current hospital or chamber</legend>
         <div class="my-profile-grid">
           <div class="my-profile-field"><label for="mp-cHospital">Hospital / chamber name</label><input id="mp-cHospital" name="cHospital" maxlength="200" placeholder="Hospital or chamber"></div>
@@ -554,6 +589,26 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   const dialog=document.getElementById('myProfileDialog'),form=document.getElementById('myProfileForm');
   const fields=['dName','dReg','dDegrees','dPhone','dEmail','cHospital','cLocation'];
   const status=document.getElementById('myProfileStatus'),save=document.getElementById('myProfileSave');
+  const tabs=Array.from(dialog.querySelectorAll('[data-profile-tab]'));
+  const sections={identity:document.getElementById('mpSectionIdentity'),contact:document.getElementById('mpSectionContact'),chamber:document.getElementById('mpSectionChamber')};
+  function activateProfileTab(name,focus=false){
+    tabs.forEach(tab=>{
+      const selected=tab.dataset.profileTab===name;
+      tab.setAttribute('aria-selected',String(selected));
+      tab.tabIndex=selected?0:-1;
+      if(selected&&focus)tab.focus();
+    });
+    Object.entries(sections).forEach(([key,section])=>section.hidden=key!==name);
+  }
+  tabs.forEach((tab,index)=>{
+    tab.addEventListener('click',()=>activateProfileTab(tab.dataset.profileTab));
+    tab.addEventListener('keydown',event=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+      event.preventDefault();
+      const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+      activateProfileTab(tabs[next].dataset.profileTab,true);
+    });
+  });
   let initial={};
   const read=()=>Object.fromEntries(fields.map(id=>[id,form.elements.namedItem(id).value]));
   const dirty=()=>fields.some(id=>form.elements.namedItem(id).value!==initial[id]);
@@ -565,6 +620,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   document.getElementById('myProfileCancel').addEventListener('click',close);
   dialog.addEventListener('cancel',event=>{if(dirty()){event.preventDefault();close();}});
   window.openMyProfile=function(){
+    activateProfileTab('identity');
     if(typeof dialog.showModal!=='function'){document.getElementById('doctor-profile-section')?.scrollIntoView({behavior:'smooth'});return;}
     initial=Object.fromEntries(fields.map(id=>[id,document.getElementById(id).value]));
     fields.forEach(id=>form.elements.namedItem(id).value=initial[id]);
@@ -580,7 +636,16 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   };
   form.addEventListener('submit',async event=>{
     event.preventDefault();
-    if(!form.reportValidity())return;
+    if(!form.reportValidity()){
+      const invalid=form.querySelector(':invalid');
+      if(invalid){
+        const panel=invalid.closest('[role="tabpanel"]');
+        const key=Object.keys(sections).find(name=>sections[name]===panel);
+        if(key)activateProfileTab(key);
+        invalid.focus();
+      }
+      return;
+    }
     if(window.isDoctorProfileReady?.()!==true){status.textContent='Profile not ready. Please reopen after it loads.';return;}
     if(typeof window.saveDoctorProfileToCloud!=='function')return;
     const values=read();
