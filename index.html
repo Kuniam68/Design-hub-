@@ -379,15 +379,25 @@ body{padding-top:var(--workspace-header-height)!important;height:100dvh!importan
 .workspace-menu-notice{margin:12px 8px 0;padding:12px;background:#edf7f3;border-radius:10px;font-size:12px;line-height:1.5;color:#235b51}
 .form-panel,.preview-panel{height:calc(100dvh - var(--workspace-header-height))!important}
 #doctor-profile-section{scroll-margin-top:85px}
-/* Responsive workspace: tablets in portrait, phones and narrow browser windows.
-   Always stack the full prescription preview below the editable form. */
+/* Explicit normal-flow mobile/tablet layout: no overlapping scroll containers. */
 @media screen and (max-width:1199px){
-  html{height:auto!important;overflow-x:hidden!important}
-  body{display:flex!important;flex-direction:column!important;height:auto!important;min-height:100dvh!important;overflow-x:hidden!important;overflow-y:auto!important}
-  .form-panel,.preview-panel{box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;flex:none!important;overflow:visible!important}
-  .form-panel{padding:clamp(12px,2vw,24px)!important}
-  .preview-panel{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;padding:20px 8px 40px!important}
-  .page-scaler{flex-shrink:0!important;max-width:100%}
+  html{height:auto!important;overflow-x:hidden!important;overflow-y:auto!important}
+  body{display:block!important;height:auto!important;min-height:100vh!important;min-height:100dvh!important;overflow:visible!important;padding-top:var(--workspace-header-height)!important}
+  body>.form-panel,body>.preview-panel{
+    display:block!important;position:relative!important;float:none!important;
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    height:auto!important;min-height:0!important;max-height:none!important;
+    margin:0!important;flex:none!important;overflow:visible!important;
+    transform:none!important;
+  }
+  body>.form-panel{z-index:auto!important;box-shadow:none!important;padding:clamp(12px,2vw,24px)!important}
+  body>.preview-panel{
+    z-index:auto!important;clear:both!important;
+    padding:20px 8px 45px!important;background:var(--bg)!important;
+    text-align:center!important;
+  }
+  #previewPanel>.page-scaler{display:block!important;position:relative!important;max-width:none!important;margin:0 auto 24px!important;text-align:left!important}
+  .section-card{max-width:100%!important}
 }
 @media(max-width:560px){.workspace-header{padding:0 10px}.workspace-header-user{display:none}.workspace-brand small{display:none}.workspace-header-left,.workspace-header-right{gap:8px}.workspace-header-logout{padding:9px 10px}}
 @media print{body{padding-top:0!important;height:auto!important}.workspace-header,.workspace-drawer,.workspace-backdrop{display:none!important}.form-panel,.preview-panel{height:auto!important}.preview-panel{width:210mm!important;max-width:none!important;padding:0!important;display:block!important}.page-scaler{max-width:none!important}}
@@ -1425,7 +1435,7 @@ body{padding-top:var(--workspace-header-height)!important;height:100dvh!importan
   /* Scale pages to fit the preview panel (preview only; export uses a clean full-size clone) */
   function fitPreview() {
     const panel = document.getElementById('previewPanel');
-    const avail = panel.clientWidth - 40;
+    const avail = Math.max(180, panel.clientWidth - (window.innerWidth < 1200 ? 16 : 40));
     const scale = Math.min(1, Math.max(0.3, avail / 794));
     panel.querySelectorAll('.page-scaler').forEach(w => {
       w.style.width = (794 * scale) + 'px';
