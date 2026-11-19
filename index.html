@@ -1447,7 +1447,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  for(const item of shown){const card=node('article','ml-card'),top=node('div','ml-card-top'),icon=node('div','ml-icon',item.type==='templates'?'▤':'☆'),info=node('div'),actions=node('div','ml-card-actions');
  info.append(node('h3','',item.name),node('p','',item.notes||'Personal clinical shortcut'));top.append(icon,info);card.append(top,node('span','ml-tag',item.medicines.length+' '+(item.medicines.length===1?'medicine':'medicines')));
  const use=node('button','ml-primary','Add to prescription');use.type='button';use.onclick=()=>apply(item);
- const edit=node('button','ml-secondary','Edit details');edit.type='button';edit.onclick=()=>{if(item.type==='templates'){window.location.assign('./template-editor.html?templateId='+encodeURIComponent(item.id)+'&edit=1');return;}editing=item.id;draft=item.medicines.map(v=>v.slice());document.getElementById('mlName').value=item.name;document.getElementById('mlNotes').value=item.notes||'';document.getElementById('mlEditorTitle').textContent='Edit library item';document.getElementById('mlEditorHint').textContent='Update the label and notes. Medicine details stay unchanged.';editor.hidden=false;editor.scrollIntoView({block:'nearest',behavior:'smooth'});};
+ const edit=node('button','ml-secondary','Edit details');edit.type='button';edit.onclick=()=>{if(item.type==='templates'){const fromPrescription=item.origin==='prescription'||item.source==='prescription'||String(item.notes||'').startsWith('Saved from Prescription History')||!item.fullRecord;window.location.assign(fromPrescription?'./index.html?editPrescriptionTemplate='+encodeURIComponent(item.id):'./template-editor.html?templateId='+encodeURIComponent(item.id)+'&edit=1');return;}editing=item.id;draft=item.medicines.map(v=>v.slice());document.getElementById('mlName').value=item.name;document.getElementById('mlNotes').value=item.notes||'';document.getElementById('mlEditorTitle').textContent='Edit library item';document.getElementById('mlEditorHint').textContent='Update the label and notes. Medicine details stay unchanged.';editor.hidden=false;editor.scrollIntoView({block:'nearest',behavior:'smooth'});};
  const del=node('button','ml-danger','Delete');del.type='button';del.onclick=async()=>{if(!(await window.mediScriptConfirm('Delete library item?','This saved item will be permanently deleted. This cannot be undone.','Delete item',true)))return;items=items.filter(x=>x.id!==item.id);if(persist()){status.textContent='Item deleted.';render();}};
  actions.append(use,edit,del);card.append(actions);grid.append(card);}
  }
@@ -3197,6 +3197,14 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
  window.openPrescriptionHistory=async(options)=>{patientHistoryScope=options&&Array.isArray(options.recordIds)?{name:String(options.patientName||'Patient'),ids:new Set(options.recordIds)}:null;dialog.showModal();search.value='';hideSearchGuide();document.getElementById('historyTitle').textContent=patientHistoryScope?patientHistoryScope.name+' · Prescription History':'Prescription History';setHistoryFilter('recent');if(hasLoaded){render();notify('Checking for updates…');}await refresh();const previous=lastCaptureError||(()=>{try{return sessionStorage.getItem('mediscript-history-capture-error')||'';}catch(_){return '';}})();if(previous&&!loadFailed)notify(previous,true);};
 })();
 
+</script>
+<script>
+// Load the prescription-origin Edit Details controller only in that explicit edit mode.
+if (new URLSearchParams(location.search).has('editPrescriptionTemplate')) {
+  const controller = document.createElement('script');
+  controller.src = './prescription-template-edit.js?v=1';
+  document.body.appendChild(controller);
+}
 </script>
 </body>
 </html>
