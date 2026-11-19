@@ -1625,6 +1625,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 </dialog>
 <!-- ================= LEFT PANEL: INPUTS ================= -->
 <div class="form-panel">
+<div id="templateWorkspaceBanner" class="template-workspace-banner"><span>▤ TEMPLATE WORKSPACE · Complete prescription saved only to Templates & Favorites</span><button type="button" id="templateWorkspaceExit">Exit template mode</button></div>
 
   <div class="panel-header">
     <h2>MediScript Pro</h2>
@@ -1999,7 +2000,6 @@ window.mediScriptConfirm=(title,description,accept='Continue',danger=false,cance
  dialog.showModal();no.focus();
 });
 </script>
-<div id="templateWorkspaceBanner" class="template-workspace-banner"><span>▤ TEMPLATE WORKSPACE · Complete prescription saved only to Templates & Favorites</span><button type="button" id="templateWorkspaceExit">Exit template mode</button></div>
 <script>
 window.mediscriptTemplateMode=true;
 window.mediscriptTemplateName='New prescription template';
