@@ -2121,6 +2121,8 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
         if(item){
           window.mediscriptTemplateId=item.id;
           window.setMediScriptTemplateMode(true,item.name);
+          // Saved templates open like ordinary editable prescriptions: hide the creation-only banner.
+          document.getElementById('templateWorkspaceBanner').hidden=true;
           if(item.fullRecord){window.restoreMediScriptPrescription?.(item.fullRecord);}
           else{
             const container=document.getElementById('med-container');
