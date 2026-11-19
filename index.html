@@ -150,9 +150,8 @@ window.saveDoctorProfileToCloud=async function(){
   const user=auth.currentUser;
   if(!user){showProfileStatus('Please sign in first.',true);return false;}
   if(profileLoadedFor!==user.uid){showProfileStatus('Profile has not loaded successfully. Please reload before saving.',true);return false;}
-  const button=document.getElementById('profileSaveButton');
   const data=Object.fromEntries(profileFields.map(id=>[id,document.getElementById(id)?.value.trim()||'']));
-  if(button)button.disabled=true;
+
   showProfileStatus('Saving your profile securely…');
   try{
     await setDoc(doc(db,'doctors',user.uid),{...data,profilePhoto:doctorProfilePhoto,updatedAt:serverTimestamp()},{merge:true});
@@ -2239,14 +2238,6 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
   });
 
 
-  function saveProfile() {
-    if(typeof window.saveDoctorProfileToCloud!=='function'){
-      const el=document.getElementById('profileSaveStatus');
-      if(el)el.textContent='Profile service is loading. Please try again.';
-      return;
-    }
-    window.saveDoctorProfileToCloud();
-  }
 
     function toggleSystem(sys, isChecked) {
     document.getElementById(`sub-${sys}`).style.display = isChecked ? 'block' : 'none';
