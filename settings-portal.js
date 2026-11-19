@@ -115,6 +115,10 @@ function msRender(){
   document.documentElement.dataset.msUiLinks=msPrefs.underlineLinks?'underlined':'normal';
   document.documentElement.dataset.msUiLegibility=msPrefs.readableLinks?'enhanced':'normal';
   document.documentElement.style.setProperty('--ms-app-accent',accent.hex);
+  const rgb=accent.rgb.split(',').map(Number);const hi=Math.max(...rgb),lo=Math.min(...rgb),spread=hi-lo;
+  let hue=0;
+  if(spread){if(hi===rgb[0])hue=((rgb[1]-rgb[2])/spread)%6;else if(hi===rgb[1])hue=(rgb[2]-rgb[0])/spread+2;else hue=(rgb[0]-rgb[1])/spread+4;hue=(hue*60+360)%360;}
+  document.documentElement.style.setProperty('--ms-rx-hue',(((hue-175+540)%360)-180)+'deg');
   document.documentElement.style.setProperty('--ms-app-font',msFontFamily());
   msDialog.dataset.density=msPrefs.density;
   msDialog.dataset.scale=msPrefs.scale;
