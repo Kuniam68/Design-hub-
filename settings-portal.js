@@ -2,7 +2,7 @@
    Isolated module: changes only its own dialog and appearance preferences.
    No prescription, template, profile, history, or other menu handlers are modified. */
 const MS_DEFAULTS=Object.freeze({
-  theme:'light',accent:'emerald',customAccent:'#6958bf',nightStart:'19',nightEnd:'07',density:'comfortable',scale:'standard',
+  theme:'light',accent:'emerald',customAccent:'#6958bf',nightStart:'19',nightEnd:'07',density:'comfortable',scale:'standard',customFontSize:16,customLineHeight:1.5,
   typeface:'modern',lineSpacing:'comfortable',corners:'rounded',surface:'layered',
   contrast:false,reduceMotion:false,boldLabels:false,focusRing:true,readableLinks:false,underlineLinks:false,reduceTransparency:false,extraTextSpacing:false,
   rememberSection:true,hotkeys:true,largeTargets:false,shortDescriptions:false
@@ -28,8 +28,8 @@ function msSanitize(raw){
   const next={...MS_DEFAULTS};
   const allowed={
     theme:['light','dark','dim','system','scheduled'],accent:[...Object.keys(MS_ACCENTS),'custom'],nightStart:['18','19','20','21','22'],nightEnd:['05','06','07','08','09'],
-    density:['comfortable','compact','spacious'],scale:['small','standard','large'],
-    typeface:['modern','serif','poppins','arial','verdana','trebuchet','georgia','monospace','custom'],lineSpacing:['tight','comfortable','relaxed'],
+    density:['comfortable','compact','spacious'],scale:['small','standard','large','custom'],
+    typeface:['modern','serif','poppins','arial','verdana','trebuchet','georgia','monospace','custom'],lineSpacing:['tight','comfortable','relaxed','custom'],
     corners:['rounded','square','subtle','soft','pill'],surface:['layered','flat']
   };
   Object.keys(allowed).forEach(key=>{if(allowed[key].includes(s[key]))next[key]=s[key];});
@@ -37,6 +37,10 @@ function msSanitize(raw){
     if(typeof s[key]==='boolean')next[key]=s[key];
   });
   if(typeof s.customAccent==='string'&&/^#[0-9a-fA-F]{6}$/.test(s.customAccent))next.customAccent=s.customAccent.toLowerCase();
+  const customFontSize=Number(s.customFontSize);
+  if(Number.isFinite(customFontSize)&&customFontSize>=12&&customFontSize<=24)next.customFontSize=Math.round(customFontSize);
+  const customLineHeight=Number(s.customLineHeight);
+  if(Number.isFinite(customLineHeight)&&customLineHeight>=1&&customLineHeight<=2.5)next.customLineHeight=Math.round(customLineHeight*20)/20;
   return next;
 }
 function msRead(){
@@ -158,12 +162,21 @@ function msApplyGlobal(){
   document.documentElement.style.setProperty('--ms-rx-hue',(((hue-175+540)%360)-180)+'deg');
   document.documentElement.style.setProperty('--ms-app-font',msFontFamily());
   document.documentElement.dataset.msUiScale=msPrefs.scale;
+  document.documentElement.style.setProperty('--ms-ui-custom-size',msPrefs.customFontSize+'px');
   document.documentElement.dataset.msUiSpacing=msPrefs.lineSpacing;
+  document.documentElement.style.setProperty('--ms-ui-custom-line-height',String(msPrefs.customLineHeight));
   document.documentElement.dataset.msUiMotion=msPrefs.reduceMotion?'reduce':'normal';
   document.documentElement.dataset.msUiTargets=msPrefs.largeTargets?'large':'normal';
   document.documentElement.dataset.msUiFocus=msPrefs.focusRing?'extra':'normal';
   document.documentElement.dataset.msUiTransparency=msPrefs.reduceTransparency?'reduce':'normal';
   document.documentElement.dataset.msUiTextSpacing=msPrefs.extraTextSpacing?'extra':'normal';
+  const headerToggle=document.getElementById('msHeaderThemeToggle');
+  if(headerToggle){
+    headerToggle.textContent=dark?'☀':'☾';
+    headerToggle.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+    headerToggle.setAttribute('title',dark?'Switch to light mode':'Switch to dark mode');
+    headerToggle.setAttribute('aria-pressed',String(dark));
+  }
 }
 function msRender(){
   msApplyGlobal();
@@ -179,6 +192,28 @@ function msRender(){
   msDialog.dataset.font=msPrefs.typeface;
   msDialog.style.setProperty('--ms-app-font',msFontFamily());
   msDialog.dataset.spacing=msPrefs.lineSpacing;
+  const sizeSlider=msDialog.querySelector('[data-ms-custom-font-size]');
+  const spacingSlider=msDialog.querySelector('[data-ms-custom-line-spacing]');
+  if(sizeSlider)sizeSlider.value=String(msPrefs.customFontSize);
+  if(spacingSlider)spacingSlider.value=String(msPrefs.customLineHeight);
+  const sizeValue=msDialog.querySelector('[data-ms-custom-size-value]');
+  const spacingValue=msDialog.querySelector('[data-ms-custom-spacing-value]');
+  if(sizeValue)sizeValue.textContent=msPrefs.customFontSize+' px';
+  if(spacingValue)spacingValue.textContent=msPrefs.customLineHeight.toFixed(2)+'×';
+  const sizePanel=msDialog.querySelector('[data-ms-custom-size-panel]');
+  const spacingPanel=msDialog.querySelector('[data-ms-custom-spacing-panel]');
+  if(sizePanel)sizePanel.hidden=msPrefs.scale!=='custom';
+  if(spacingPanel)spacingPanel.hidden=msPrefs.lineSpacing!=='custom';
+  const sample=msDialog.querySelector('[data-ms-reading-preview]');
+  if(sample){
+    const px=msPrefs.scale==='custom'?msPrefs.customFontSize:msPrefs.scale==='small'?13:msPrefs.scale==='large'?18:16;
+    const line=msPrefs.lineSpacing==='custom'?msPrefs.customLineHeight:msPrefs.lineSpacing==='tight'?1.2:msPrefs.lineSpacing==='relaxed'?1.85:1.5;
+    sample.style.fontSize=px+'px';
+    sample.style.lineHeight=String(line);
+    sample.style.fontFamily=msFontFamily();
+    const note=msDialog.querySelector('[data-ms-reading-preview-meta]');
+    if(note)note.textContent=px+' px · '+line.toFixed(2)+'× line spacing';
+  }
   msDialog.dataset.corners=msPrefs.corners;
   msDialog.dataset.surface=msPrefs.surface;
   msDialog.dataset.motion=msPrefs.reduceMotion?'reduce':'normal';
@@ -285,13 +320,16 @@ function msMarkup(){
       .map(p=>'<button type="button" class="mss-preset" data-ms-preset="'+p[0]+'"><strong>'+p[1]+'</strong><small>'+p[2]+'</small></button>').join('')+
     '</div></div>';
   const typography=msHeader('Readable by design.','Your chosen font affects the on-screen workspace, not the original printed prescription.')+
-    msGroup('Reading size','scale',[['small','Small'],['standard','Standard'],['large','Large']])+
+    msGroup('Reading size','scale',[['small','Small'],['standard','Standard'],['large','Large'],['custom','Custom']])+
+    '<div class="mss-custom-adjust" data-ms-custom-size-panel hidden><label for="msCustomFontSize"><strong>Custom reading size</strong><output data-ms-custom-size-value for="msCustomFontSize">16 px</output></label><input id="msCustomFontSize" type="range" min="12" max="24" step="1" value="16" data-ms-custom-font-size aria-label="Custom reading size in pixels"><div class="mss-range-ends"><span>12 px</span><span>24 px</span></div></div>'+
     '<div class="mss-section"><h3>Typeface gallery</h3><div class="mss-font-gallery" role="group" aria-label="Typeface">'+
     [['modern','Modern'],['poppins','Poppins'],['arial','Arial'],['verdana','Verdana'],['trebuchet','Humanist'],['serif','Editorial'],['georgia','Georgia'],['monospace','Monospace'],['custom','My font']]
       .map(f=>'<button type="button" class="mss-font-choice" data-ms-set="typeface" data-ms-value="'+f[0]+'" aria-pressed="false"><span class="mss-font-glyph" data-ms-font-example="'+f[0]+'">Aa</span><strong>'+f[1]+'</strong></button>').join('')+
     '</div></div>'+
     '<div class="mss-font-import"><div><strong>Upload your own font</strong><small data-ms-font-status>Choose a preset typeface or upload a font</small></div><button type="button" class="mss-data-action" data-ms-font-upload>Choose font</button><input id="msFontUpload" type="file" accept=".woff,.woff2,.ttf,.otf,font/woff,font/woff2" hidden></div>'+
-    msGroup('Line spacing','lineSpacing',[['tight','Tight'],['comfortable','Comfortable'],['relaxed','Relaxed']]);
+    msGroup('Line spacing','lineSpacing',[['tight','Tight'],['comfortable','Comfortable'],['relaxed','Relaxed'],['custom','Custom']])+
+    '<div class="mss-custom-adjust" data-ms-custom-spacing-panel hidden><label for="msCustomLineSpacing"><strong>Custom line spacing</strong><output data-ms-custom-spacing-value for="msCustomLineSpacing">1.50×</output></label><input id="msCustomLineSpacing" type="range" min="1" max="2.5" step="0.05" value="1.5" data-ms-custom-line-spacing aria-label="Custom line spacing multiplier"><div class="mss-range-ends"><span>1.00×</span><span>2.50×</span></div></div>'+
+    '<div class="mss-reading-preview-card"><div class="mss-reading-preview-head"><strong>Live reading preview</strong><span data-ms-reading-preview-meta>16 px · 1.50× line spacing</span></div><p class="mss-reading-preview-copy" data-ms-reading-preview>Clear instructions make every detail easier to review.<br>Adjust the size and space between these lines.<br>Your printed prescription stays unchanged.</p></div>';
   const layout=msHeader('Your preferred rhythm.','Refine corners, spacing and surfaces throughout the on-screen workspace.')+
     msGroup('Interface density','density',[['compact','Compact'],['comfortable','Comfortable'],['spacious','Spacious']])+
     msGroup('Corner style','corners',[['square','Sharp'],['subtle','Subtle'],['rounded','Balanced'],['soft','Soft'],['pill','Pill-shaped']])+
@@ -386,10 +424,28 @@ function msHandleClick(event){
   if(button.hasAttribute('data-ms-export')){void msExport();return;}
   if(button.hasAttribute('data-ms-import')){msDialog.querySelector('#msSettingsImport').click();return;}
   if(button.hasAttribute('data-ms-copy')){void msCopy();return;}
-  if(button.hasAttribute('data-ms-reset')){
-    if(!window.confirm('Reset only Settings & Appearance to defaults? Prescriptions and templates are untouched.'))return;
-    msPrefs={...MS_DEFAULTS};msCurrent='appearance';msWrite();msSection('appearance');msRender();msToast('Default settings restored');
+  if(button.hasAttribute('data-ms-reset')){msShowResetDialog();return;}
+}
+let msResetDialog=null;
+function msShowResetDialog(){
+  if(!msResetDialog){
+    msResetDialog=document.createElement('dialog');
+    msResetDialog.id='msResetConfirmDialog';
+    msResetDialog.setAttribute('aria-labelledby','msResetConfirmTitle');
+    msResetDialog.setAttribute('aria-describedby','msResetConfirmDescription');
+    msResetDialog.innerHTML='<div class="mss-reset-body"><div class="mss-reset-icon" aria-hidden="true">↺</div><h2 id="msResetConfirmTitle">Restore default appearance?</h2><p id="msResetConfirmDescription">This will reset only your Settings & Appearance preferences, including the theme, typography and layout. Your prescriptions, templates and medical records will not be changed.</p><div class="mss-reset-actions"><button type="button" data-ms-reset-cancel>Keep my settings</button><button type="button" data-ms-reset-confirm>Restore defaults</button></div></div>';
+    document.body.appendChild(msResetDialog);
+    msResetDialog.querySelector('[data-ms-reset-cancel]').addEventListener('click',()=>msResetDialog.close());
+    msResetDialog.querySelector('[data-ms-reset-confirm]').addEventListener('click',()=>{
+      msResetDialog.close();
+      msPrefs={...MS_DEFAULTS};msCurrent='appearance';msWrite();msSection('appearance');msRender();msToast('Default settings restored');
+    });
+    msResetDialog.addEventListener('close',()=>{
+      if(msDialog?.open)msDialog.querySelector('[data-ms-reset]')?.focus({preventScroll:true});
+    });
   }
+  if(!msResetDialog.open)msResetDialog.showModal();
+  msResetDialog.querySelector('[data-ms-reset-cancel]')?.focus();
 }
 function msCreate(){
   msDialog=document.createElement('dialog');
@@ -406,6 +462,22 @@ function msCreate(){
   };
   msDialog.addEventListener('input',onColor);
   msDialog.addEventListener('change',onColor);
+  msDialog.addEventListener('input',event=>{
+    const target=event.target;
+    if(target?.matches?.('[data-ms-custom-font-size]')){
+      const value=Number(target.value);
+      if(Number.isFinite(value)&&value>=12&&value<=24){
+        msPrefs=msSanitize({...msPrefs,scale:'custom',customFontSize:value});
+        msWrite();msRender();
+      }
+    }else if(target?.matches?.('[data-ms-custom-line-spacing]')){
+      const value=Number(target.value);
+      if(Number.isFinite(value)&&value>=1&&value<=2.5){
+        msPrefs=msSanitize({...msPrefs,lineSpacing:'custom',customLineHeight:value});
+        msWrite();msRender();
+      }
+    }
+  });
   msDialog.querySelector('#msFontUpload').addEventListener('change',async event=>{await msLoadFont(event.target.files?.[0]);event.target.value='';});
   msDialog.querySelector('#msSettingsImport').addEventListener('change',async event=>{
     await msImport(event.target.files?.[0]);event.target.value='';
@@ -424,6 +496,12 @@ function msCreate(){
   });
   msDialog.addEventListener('close',()=>document.getElementById('workspaceMenuButton')?.focus({preventScroll:true}));
   msInstallThemeWatchers();
+}
+function msBindHeaderThemeToggle(){
+  const button=document.getElementById('msHeaderThemeToggle');
+  if(!button||button.dataset.msBound==='true')return;
+  button.dataset.msBound='true';
+  button.addEventListener('click',()=>msChange('theme',msIsDark()?'light':'dark'));
 }
 function msInstallThemeWatchers(){
   if(msThemeWatchersReady)return;
@@ -453,6 +531,7 @@ function msEnsureCss(){
 export async function initializeSettingsAppearance(){
   await msEnsureCss();
   msRead();
+  msBindHeaderThemeToggle();
   msInstallThemeWatchers();
   msRender();
   void msRestoreFont();
