@@ -863,7 +863,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <button type="button" class="workspace-nav-item" data-workspace-action="locations"><span>🏥</span>Hospitals &amp; Chambers</button>
   <button type="button" class="workspace-nav-item" data-workspace-action="history"><span>🕘</span>Prescription History</button>
   <button type="button" class="workspace-nav-item" data-workspace-action="patients"><span>👥</span>Patient Directory</button>
-  <button type="button" class="workspace-nav-item planned" data-workspace-action="templates"><span>📋</span>Templates &amp; Medicine Favorites <small>Planned</small></button>
+  <button type="button" class="workspace-nav-item" data-workspace-action="templates"><span>📋</span>Templates &amp; Medicine Favorites</button>
   <button type="button" class="workspace-nav-item planned" data-workspace-action="settings"><span>⚙️</span>Settings &amp; Appearance <small>Planned</small></button>
   <div class="workspace-nav-separator"></div>
   <button type="button" class="workspace-nav-item" data-workspace-action="logout"><span>↪</span>Sign out</button>
@@ -881,6 +881,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  if(action==='locations'){toggle(false);window.openPracticeLocations();return;}
  if(action==='history'){toggle(false);window.openPrescriptionHistory();return;}
  if(action==='patients'){toggle(false);window.openPatientDirectory();return;}
+ if(action==='templates'){toggle(false);window.openMedicineLibrary();return;}
  if(action==='prescription'){toggle(false);window.startNewPrescription();return;}
  notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
  });
@@ -1281,6 +1282,90 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .pd-visit button{border:1px solid #bad7ca;border-radius:9px;background:white;color:#0a7668;padding:9px 12px;font-weight:700;font-size:11px;cursor:pointer}
 @media(max-width:640px){.patient-directory{width:calc(100vw - 16px);border-radius:19px}.pd-hero{padding:30px 19px 24px}.pd-hero h2{font-size:26px}.pd-body{padding:17px 14px 25px}.pd-grid{grid-template-columns:1fr}.pd-filter-tabs{padding:9px;gap:7px}.pd-filter{padding:10px 12px;font-size:11px}.pd-sort-wrap{margin-left:0}.pd-sort-trigger #pdSortLabel{display:none}.pd-card{padding:15px}}
 </style>
+
+<style>
+.ml-dialog{border:0;padding:0;width:min(960px,calc(100vw - 24px));max-height:90dvh;margin:auto;border-radius:26px;overflow:auto;background:#f6faf8;color:#173f36;box-shadow:0 28px 95px #092e3c70;font-family:inherit}
+.ml-dialog::backdrop{background:#092c38ac;backdrop-filter:blur(6px)}
+.ml-head{position:relative;padding:34px 35px;background:linear-gradient(120deg,#103d4a,#087d71);color:white}
+.ml-kicker{font-size:11px;font-weight:800;letter-spacing:2px;color:#abe9d8}
+.ml-head h2{font-size:30px;margin:12px 0 8px;color:white;letter-spacing:-.7px}
+.ml-head p{font-size:13px;color:#d0eae3;max-width:620px;line-height:1.6}
+.ml-x{position:absolute;right:20px;top:18px;width:43px;height:43px;border:1px solid #ffffff65;border-radius:13px;background:#ffffff1f;color:white;font-size:25px;cursor:pointer}
+.ml-metrics{display:flex;gap:10px;flex-wrap:wrap;margin-top:23px}
+.ml-metric{border:1px solid #ffffff35;background:#ffffff19;border-radius:14px;padding:12px 17px;min-width:135px}
+.ml-metric strong{display:block;font-size:24px;color:white}.ml-metric small{font-size:11px;color:#d1ebe5}
+.ml-body{padding:25px 32px 32px}
+.ml-switch{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:20px}
+.ml-tab{border:1px solid #d0e7dd;border-radius:13px;padding:12px 17px;background:white;color:#356b5d;font-size:12px;font-weight:800;cursor:pointer}
+.ml-tab.on{background:#087d70;border-color:#087d70;color:white;box-shadow:0 5px 16px #087d7030}
+.ml-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:15px}
+.ml-search{display:flex;gap:9px;align-items:center;flex:1;min-width:170px;background:white;border:1px solid #d0e6dc;border-radius:14px;padding:0 14px;height:48px;color:#087d70}
+.ml-search input{flex:1;min-width:0;width:100%;height:42px;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;font:inherit;font-size:13px}
+.ml-primary,.ml-secondary,.ml-danger{border:0;border-radius:11px;padding:12px 15px;font-size:12px;font-weight:800;cursor:pointer}
+.ml-primary{background:#087d70;color:white}.ml-secondary{background:#eaf6f0;color:#16695b;border:1px solid #cce4d8}.ml-danger{background:#fff0ed;color:#ad4338;border:1px solid #f4d3cb}
+.ml-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.ml-card{background:white;border:1px solid #dcebe3;border-radius:18px;padding:19px;box-shadow:0 8px 24px #134e3b0a}
+.ml-card-top{display:flex;align-items:flex-start;gap:11px}.ml-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#e4f5ed;color:#0a8272;font-size:21px;flex:none}
+.ml-card h3{font-size:16px;margin:0 0 5px;color:#18483c;overflow-wrap:anywhere}.ml-card p{font-size:12px;color:#6a8a7d;line-height:1.5;margin:0}
+.ml-tag{display:inline-block;margin-top:13px;padding:6px 10px;background:#f0f8f3;border-radius:30px;color:#367665;font-size:11px;font-weight:700}
+.ml-card-actions{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #e8f1eb;margin-top:15px;padding-top:15px}
+.ml-empty{grid-column:1/-1;padding:45px 20px;text-align:center;border:1px dashed #badccd;border-radius:17px;background:white;color:#6b887e;font-size:13px;line-height:1.7}
+.ml-status{margin:12px 0;color:#3b796a;font-size:12px;min-height:18px}
+.ml-editor{margin:0 0 20px;border:1px solid #cde7da;background:#fff;border-radius:18px;padding:20px}
+.ml-editor[hidden]{display:none!important}.ml-editor h3{font-size:17px;margin:0 0 7px;color:#184a3f}
+.ml-editor p{font-size:12px;color:#728e83;margin:0 0 16px}
+.ml-field{display:block;margin-bottom:13px;font-size:12px;font-weight:750;color:#315c50}
+.ml-field input,.ml-field textarea{display:block;width:100%;box-sizing:border-box;border:1px solid #cde2d7;border-radius:11px;padding:12px;margin-top:7px;background:#fbfdfc;font:inherit;font-size:13px;color:#193f35}
+.ml-field textarea{min-height:65px;resize:vertical}
+.ml-editor-actions{display:flex;gap:9px;flex-wrap:wrap}
+.ml-note{font-size:11px;line-height:1.6;color:#738c81;margin-top:16px}
+@media(max-width:620px){.ml-dialog{width:calc(100vw - 14px);border-radius:19px}.ml-head{padding:30px 20px 23px}.ml-head h2{font-size:25px}.ml-body{padding:17px 14px 24px}.ml-grid{grid-template-columns:1fr}.ml-tools .ml-primary{width:100%}}
+</style>
+<dialog class="ml-dialog" id="medicineLibraryDialog" aria-labelledby="mlTitle">
+ <header class="ml-head"><button type="button" class="ml-x" id="mlClose" aria-label="Close medicine library">×</button><div class="ml-kicker">MEDISCRIPT PRO · CLINICAL SHORTCUTS</div><h2 id="mlTitle">Templates &amp; Favorites</h2><p>Your personal prescribing collection. Keep trusted combinations and frequently used medicines within easy reach.</p><div class="ml-metrics"><div class="ml-metric"><strong id="mlTemplateCount">0</strong><small>Saved templates</small></div><div class="ml-metric"><strong id="mlFavoriteCount">0</strong><small>Medicine favorites</small></div></div></header>
+ <div class="ml-body">
+  <div class="ml-switch" role="group" aria-label="Library collection"><button class="ml-tab on" type="button" data-ml-tab="templates" aria-pressed="true">▤ Prescription Templates</button><button class="ml-tab" type="button" data-ml-tab="favorites" aria-pressed="false">☆ Medicine Favorites</button></div>
+  <div class="ml-tools"><label class="ml-search">⌕ <input id="mlSearch" type="search" placeholder="Search your collection…" aria-label="Search templates and medicines"></label><button type="button" class="ml-primary" id="mlCreate">＋ Create template</button></div>
+  <div class="ml-editor" id="mlEditor" hidden><h3 id="mlEditorTitle">Create template</h3><p id="mlEditorHint">Save a reusable medicine combination from your prescription editor.</p><label class="ml-field">Collection name<input id="mlName" maxlength="100" placeholder="e.g. My commonly used regimen"></label><label class="ml-field">Notes (optional)<textarea id="mlNotes" maxlength="300" placeholder="Personal reference notes — not patient details"></textarea></label><div class="ml-editor-actions"><button type="button" class="ml-primary" id="mlSave">Save to library</button><button type="button" class="ml-secondary" id="mlCancel">Cancel</button></div></div>
+  <div class="ml-grid" id="mlGrid"></div><div class="ml-status" id="mlStatus" role="status"></div>
+  <p class="ml-note">Personal shortcuts only. Stored on this browser/device, not synced to Firebase. Never store patient information in templates. Review each medicine, formulation, strength, dose, route, frequency and duration before use.</p>
+ </div>
+</dialog>
+<script>
+(function(){
+ const dialog=document.getElementById('medicineLibraryDialog'),grid=document.getElementById('mlGrid'),search=document.getElementById('mlSearch'),editor=document.getElementById('mlEditor'),create=document.getElementById('mlCreate'),status=document.getElementById('mlStatus');
+ const tabs=Array.from(dialog.querySelectorAll('[data-ml-tab]'));let tab='templates',items=[],draft=[],editing=null;
+ const storageKey='mediscript-shortcuts-v1';
+ const node=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n;};
+ function read(){try{const parsed=JSON.parse(localStorage.getItem(storageKey)||'[]');return Array.isArray(parsed)?parsed.filter(x=>x&&Array.isArray(x.medicines)):[];}catch(e){status.textContent='Browser storage unavailable.';return[];}}
+ function persist(){try{localStorage.setItem(storageKey,JSON.stringify(items));return true;}catch(e){status.textContent='Could not save. Check browser storage permissions or available space.';return false;}}
+ function medicinesOnPage(){return Array.from(document.querySelectorAll('#med-container .med-item')).map(row=>Array.from(row.querySelectorAll('input,select,textarea')).map(el=>el.type==='checkbox'?el.checked:el.value)).filter(values=>String(values[1]||'').trim());}
+ function fillRow(row,values){const controls=Array.from(row.querySelectorAll('input,select,textarea'));controls.forEach((control,i)=>{if(i>=values.length)return;if(control.type==='checkbox')control.checked=Boolean(values[i]);else control.value=String(values[i]??'');});const form=row.querySelector('.m-form');if(form&&typeof toggleFormMode==='function')toggleFormMode(form);if(typeof updatePreview==='function')updatePreview();}
+ function apply(item){if(!item.medicines.length)return;const existing=Array.from(document.querySelectorAll('#med-container .med-item')).filter(row=>row.querySelector('.m-name')?.value.trim());if(existing.length&&!window.confirm('Add these medicines to the current prescription? Existing medicines will be kept. Review all details before prescribing.'))return;
+ dialog.close();for(const values of item.medicines){if(typeof addMedicine!=='function'){status.textContent='Medicine editor is unavailable.';return;}addMedicine();const rows=document.querySelectorAll('#med-container .med-item');fillRow(rows[rows.length-1],values);}
+ if(typeof updatePreview==='function')updatePreview();document.getElementById('med-container')?.scrollIntoView({behavior:'smooth',block:'center'});}
+ function setTab(value){tab=value;tabs.forEach(b=>{const on=b.dataset.mlTab===value;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});create.textContent=value==='templates'?'＋ Create template':'☆ Save current medicine';editor.hidden=true;editing=null;search.value='';render();}
+ function render(){grid.replaceChildren();document.getElementById('mlTemplateCount').textContent=items.filter(x=>x.type==='templates').length;document.getElementById('mlFavoriteCount').textContent=items.filter(x=>x.type==='favorites').length;
+ const q=search.value.trim().toLocaleLowerCase();const shown=items.filter(x=>x.type===tab&&[x.name,x.notes,...x.medicines.flat()].some(v=>String(v||'').toLocaleLowerCase().includes(q))).sort((a,b)=>b.created-a.created);
+ if(!shown.length){grid.append(node('div','ml-empty',q?'No matching items. Try a different search.':tab==='templates'?'No templates yet. Create your first one using medicines in the prescription editor.':'No medicine favorites yet. Save a medicine from your current prescription.'));return;}
+ for(const item of shown){const card=node('article','ml-card'),top=node('div','ml-card-top'),icon=node('div','ml-icon',item.type==='templates'?'▤':'☆'),info=node('div'),actions=node('div','ml-card-actions');
+ info.append(node('h3','',item.name),node('p','',item.notes||'Personal clinical shortcut'));top.append(icon,info);card.append(top,node('span','ml-tag',item.medicines.length+' '+(item.medicines.length===1?'medicine':'medicines')));
+ const use=node('button','ml-primary','＋ Add to prescription');use.type='button';use.onclick=()=>apply(item);
+ const edit=node('button','ml-secondary','Edit details');edit.type='button';edit.onclick=()=>{editing=item.id;draft=item.medicines.map(v=>v.slice());document.getElementById('mlName').value=item.name;document.getElementById('mlNotes').value=item.notes||'';document.getElementById('mlEditorTitle').textContent='Edit library item';document.getElementById('mlEditorHint').textContent='Update the label and notes. Medicine details stay unchanged.';editor.hidden=false;editor.scrollIntoView({block:'nearest',behavior:'smooth'});};
+ const del=node('button','ml-danger','Delete');del.type='button';del.onclick=()=>{if(!window.confirm('Delete this saved library item? This cannot be undone.'))return;items=items.filter(x=>x.id!==item.id);if(persist()){status.textContent='Item deleted.';render();}};
+ actions.append(use,edit,del);card.append(actions);grid.append(card);}
+ }
+ function start(){editing=null;const medicines=medicinesOnPage();if(!medicines.length){status.textContent='Add a medicine with its name to the prescription editor first.';return;}
+ if(tab==='favorites'&&medicines.length>1){status.textContent='To save a single medicine favorite, leave only that medicine in the editor. Templates can save combinations.';return;}
+ draft=(tab==='favorites'?medicines.slice(0,1):medicines).map(v=>v.slice());document.getElementById('mlName').value=tab==='favorites'?String(draft[0][1]||''):'';document.getElementById('mlNotes').value='';document.getElementById('mlEditorTitle').textContent=tab==='templates'?'Create prescription template':'Save medicine favorite';document.getElementById('mlEditorHint').textContent='Saving '+draft.length+' medicine(s) from the current prescription. No patient data is included.';editor.hidden=false;editor.scrollIntoView({block:'nearest',behavior:'smooth'});}
+ document.getElementById('mlSave').onclick=()=>{const name=document.getElementById('mlName').value.trim(),notes=document.getElementById('mlNotes').value.trim();if(!name){status.textContent='Please enter a collection name.';return;}if(!draft.length){status.textContent='No medicine details available.';return;}
+ const before=items.slice();if(editing){const item=items.find(x=>x.id===editing);if(item){item.name=name;item.notes=notes;}}else items.push({id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:tab,name,notes,medicines:draft,created:Date.now()});
+ if(!persist()){items=before;return;}editor.hidden=true;editing=null;status.textContent='Saved to this browser’s personal library.';render();};
+ create.onclick=start;document.getElementById('mlCancel').onclick=()=>{editor.hidden=true;editing=null;};
+ document.getElementById('mlClose').onclick=()=>dialog.close();tabs.forEach(b=>b.onclick=()=>setTab(b.dataset.mlTab));search.addEventListener('input',render);
+ window.openMedicineLibrary=()=>{items=read();status.textContent='';dialog.showModal();setTab('templates');};
+})();
+</script>
 <dialog class="patient-directory" id="patientDirectoryDialog" aria-labelledby="pdTitle">
  <header class="pd-hero"><button type="button" class="pd-close" id="pdClose" aria-label="Close Patient Directory">×</button><div class="pd-kicker">MEDISCRIPT PRO · PATIENT CARE</div><h2 id="pdTitle">Patient Directory</h2><p>A thoughtful home for your patients and their prescription journeys. Find the right record, faster.</p><div class="pd-stats"><div class="pd-stat"><strong id="pdPatientCount">—</strong><small>Patients</small></div><div class="pd-stat"><strong id="pdRxCount">—</strong><small>Prescriptions</small></div><div class="pd-stat"><strong id="pdSavedCount">—</strong><small>Retained records</small></div></div></header>
  <main class="pd-body"><div class="pd-toolbar"><label class="pd-search"><span aria-hidden="true">⌕</span><input type="search" id="pdSearch" placeholder="Search patient name, phone, diagnosis…" aria-label="Search patients"></label><div class="pd-filter-tabs" role="group" aria-label="Filter patients"><button type="button" class="pd-filter active" data-pd-filter="recent" aria-pressed="true">◷ Recent</button><button type="button" class="pd-filter" data-pd-filter="saved" aria-pressed="false">✓ Saved Patients</button><button type="button" class="pd-filter" data-pd-filter="frequent" aria-pressed="false">✦ Frequent Patients</button><div class="pd-sort-wrap"><button type="button" class="pd-filter pd-sort-trigger" id="pdSortTrigger" aria-haspopup="true" aria-expanded="false" aria-controls="pdSortMenu">↕ Sort by <span id="pdSortLabel">Newest first</span> <span aria-hidden="true">⌄</span></button><div class="pd-sort-menu" id="pdSortMenu" hidden role="group" aria-label="Sort patients"><div class="pd-sort-heading">SORT PATIENTS</div><button type="button" data-pd-sort="newest">◷ Newest first</button><button type="button" data-pd-sort="oldest">◴ Oldest first</button><button type="button" data-pd-sort="az">↓ Name A–Z</button><button type="button" data-pd-sort="za">↑ Name Z–A</button><button type="button" data-pd-sort="most">▤ Most prescriptions</button><button type="button" data-pd-sort="least">▤ Fewest prescriptions</button><button type="button" data-pd-sort="ageAsc">Age · youngest first</button><button type="button" data-pd-sort="ageDesc">Age · oldest first</button></div></div></div></div><div id="pdStatus" class="pd-results" role="status">Loading patient directory…</div><section class="pd-detail" id="pdDetail" hidden aria-label="Patient details"></section><div class="pd-grid" id="pdGrid"></div></main>
