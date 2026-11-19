@@ -2159,43 +2159,90 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
 
 
   window.onload = function() {
-    // The template editor has its own HTML document, controls, and styles.
-    // Never import a prescription draft when creating a template.
+    // This loading and recovery path runs only on the existing template-editor page.
+    // The Create New Template path (no templateId) and all other menu actions stay intact.
     startNewPrescription(true);
     window.configureTemplateActions();
     const params=new URLSearchParams(location.search);
     const templateId=params.get('templateId');
-    if(!templateId){updatePreview();return;}
+    const editing=params.get('edit')==='1';
+    const saveButton=document.getElementById('btnDownload');
+    if(!templateId){
+      if(editing){
+        if(saveButton)saveButton.disabled=true;
+        window.mediScriptConfirm?.('Template unavailable','The template ID is missing. No existing template will be overwritten. Please return to Templates & Favorites.','OK',false,'Close');
+      }else updatePreview();
+      return;
+    }
     try {
       const saved=JSON.parse(localStorage.getItem('mediscript-shortcuts-v1')||'[]');
       const item=Array.isArray(saved)?saved.find(x=>x.id===templateId&&x.type==='templates'):null;
-      if(!item)throw new Error('Template not found in browser storage');
+      if(!item)throw new Error('Selected template not found in browser storage');
       window.mediscriptTemplateId=item.id;
       window.mediscriptTemplateName=item.name||'Saved template';
+
+      const savedMedicineRows=(Array.isArray(item.medicines)?item.medicines:[])
+        .map(entry=>Array.isArray(entry)?entry:(Array.isArray(entry?.values)?entry.values:[]));
+      const drugName=values=>String(values?.[1]||'').trim();
+      const recordRows=record=>(Array.isArray(record?.medicines)?record.medicines:[])
+        .map(entry=>Array.isArray(entry)?entry:(Array.isArray(entry?.values)?entry.values:[]));
+      const renderedDrugNames=()=>Array.from(document.querySelectorAll('#med-container .med-item .m-name'))
+        .map(input=>input.value.trim()).filter(Boolean);
+
+      // Recover medicine rows directly from the saved library item, without
+      // discarding diagnoses, other editable fields, or the original template.
+      function restoreSavedMedicineRows(rows){
+        const container=document.getElementById('med-container');
+        container.replaceChildren();medCount=0;
+        rows.slice(0,100).forEach(values=>{
+          addMedicine();
+          const row=container.lastElementChild;
+          Array.from(row.querySelectorAll('input,select,textarea')).forEach((control,j)=>{
+            if(j<values.length){
+              if(control.type==='checkbox'||control.type==='radio')control.checked=Boolean(values[j]);
+              else control.value=String(values[j]??'');
+            }
+          });
+          const form=row.querySelector('.m-form');
+          if(form)toggleFormMode(form);
+        });
+        if(!container.children.length)addMedicine();
+      }
+
       if(item.fullRecord){
         const record=structuredClone(item.fullRecord);
         if(!record.version)record.version=1;
         if(!record.fields)record.fields={};
-        if(!Array.isArray(record.medicines))record.medicines=(item.medicines||[]).map(values=>({values}));
+        if(!Array.isArray(record.medicines) ||
+          (!recordRows(record).some(values=>drugName(values)) &&
+            savedMedicineRows.some(values=>drugName(values)))){
+          record.medicines=savedMedicineRows.map(values=>({values}));
+        }
         window.restoreMediScriptPrescription(record);
       }else{
-        const container=document.getElementById('med-container');
-        container.replaceChildren();medCount=0;
-        (item.medicines||[]).forEach(values=>{
-          addMedicine();
-          const row=container.lastElementChild;
-          Array.from(row.querySelectorAll('input,select,textarea')).forEach((control,j)=>{
-            if(j<values.length){if(control.type==='checkbox')control.checked=Boolean(values[j]);else control.value=String(values[j]??'');}
-          });
-          const form=row.querySelector('.m-form');if(form)toggleFormMode(form);
-        });
-        if(!container.children.length)addMedicine();
+        restoreSavedMedicineRows(savedMedicineRows);
         if(typeof item.advice==='string')document.getElementById('advice').value=item.advice;
-        updatePreview();
+      }
+
+      const storedNames=savedMedicineRows.map(drugName).filter(Boolean);
+      // A legacy fullRecord may hold empty medicine rows even though the
+      // library still retains the medicines. Always recover those medicines.
+      if(storedNames.length && !renderedDrugNames().length){
+        restoreSavedMedicineRows(savedMedicineRows);
+      }
+      updatePreview();
+
+      // Never let Save the Changes silently replace a saved treatment with
+      // a blank prescription when opening/editing the template failed.
+      if(editing && !renderedDrugNames().length){
+        throw new Error(storedNames.length
+          ? 'Saved medicine rows could not be restored. The original template is safe.'
+          : 'This template has no recoverable medicine names in browser storage. The original template is safe.');
       }
     }catch(error){
-      console.error('Template load error',error);
-      window.mediScriptConfirm?.('Unable to load template','The saved template could not be loaded. Please return to Templates & Favorites and try again.','OK',false,'Close');
+      console.error('Template edit load error',error);
+      if(saveButton)saveButton.disabled=true;
+      window.mediScriptConfirm?.('Unable to load template',String(error.message||error)+' Please return to Templates & Favorites. No template has been changed.','OK',false,'Close');
     }
   };
 
