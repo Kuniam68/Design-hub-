@@ -4,7 +4,7 @@
 const MS_DEFAULTS=Object.freeze({
   theme:'light',accent:'emerald',customAccent:'#6958bf',nightStart:'19',nightEnd:'07',density:'comfortable',scale:'standard',
   typeface:'modern',lineSpacing:'comfortable',corners:'rounded',surface:'layered',
-  contrast:false,reduceMotion:false,boldLabels:false,focusRing:true,readableLinks:false,underlineLinks:false,
+  contrast:false,reduceMotion:false,boldLabels:false,focusRing:true,readableLinks:false,underlineLinks:false,reduceTransparency:false,extraTextSpacing:false,
   rememberSection:true,hotkeys:true,largeTargets:false,shortDescriptions:false
 });
 const MS_ACCENTS={
@@ -30,10 +30,10 @@ function msSanitize(raw){
     theme:['light','dark','dim','system','scheduled'],accent:[...Object.keys(MS_ACCENTS),'custom'],nightStart:['18','19','20','21','22'],nightEnd:['05','06','07','08','09'],
     density:['comfortable','compact','spacious'],scale:['small','standard','large'],
     typeface:['modern','serif','poppins','arial','verdana','trebuchet','georgia','monospace','custom'],lineSpacing:['tight','comfortable','relaxed'],
-    corners:['rounded','square','soft','pill'],surface:['layered','flat']
+    corners:['rounded','square','subtle','soft','pill'],surface:['layered','flat']
   };
   Object.keys(allowed).forEach(key=>{if(allowed[key].includes(s[key]))next[key]=s[key];});
-  ['contrast','reduceMotion','boldLabels','focusRing','readableLinks','underlineLinks','rememberSection','hotkeys','largeTargets','shortDescriptions'].forEach(key=>{
+  ['contrast','reduceMotion','boldLabels','focusRing','readableLinks','underlineLinks','reduceTransparency','extraTextSpacing','rememberSection','hotkeys','largeTargets','shortDescriptions'].forEach(key=>{
     if(typeof s[key]==='boolean')next[key]=s[key];
   });
   if(typeof s.customAccent==='string'&&/^#[0-9a-fA-F]{6}$/.test(s.customAccent))next.customAccent=s.customAccent.toLowerCase();
@@ -126,7 +126,7 @@ async function msRestoreFont(){
 async function msLoadFont(file,restoring=false){
   if(!file)return;
   const ext=file.name.split('.').pop().toLowerCase();
-  if(!['woff','woff2','ttf','otf'].includes(ext)||file.size>2*1024*1024||file.size<100){msToast('Use a WOFF, WOFF2, TTF or OTF font under 3 MB');return;}
+  if(!['woff','woff2','ttf','otf'].includes(ext)||file.size>2*1024*1024||file.size<100){msToast('Use a WOFF, WOFF2, TTF or OTF font under 2 MB');return;}
   const next=URL.createObjectURL(file);
   try{
     const face=new FontFace('MediScriptCustomFont',`url("${next}")`);
@@ -162,6 +162,8 @@ function msApplyGlobal(){
   document.documentElement.dataset.msUiMotion=msPrefs.reduceMotion?'reduce':'normal';
   document.documentElement.dataset.msUiTargets=msPrefs.largeTargets?'large':'normal';
   document.documentElement.dataset.msUiFocus=msPrefs.focusRing?'extra':'normal';
+  document.documentElement.dataset.msUiTransparency=msPrefs.reduceTransparency?'reduce':'normal';
+  document.documentElement.dataset.msUiTextSpacing=msPrefs.extraTextSpacing?'extra':'normal';
 }
 function msRender(){
   msApplyGlobal();
@@ -222,6 +224,11 @@ function msSection(section){
 }
 function msChange(key,value){
   if(!(key in MS_DEFAULTS))return;
+  if(key==='typeface'&&value==='custom'&&!msFontUrl){
+    msDialog?.querySelector('#msFontUpload')?.click();
+    msToast('Choose your personal font file first');
+    return;
+  }
   const changed={...msPrefs,[key]:value};
   msPrefs=msSanitize(changed);
   msWrite();msRender();
@@ -279,12 +286,15 @@ function msMarkup(){
     '</div></div>';
   const typography=msHeader('Readable by design.','Your chosen font affects the on-screen workspace, not the original printed prescription.')+
     msGroup('Reading size','scale',[['small','Small'],['standard','Standard'],['large','Large']])+
-    msGroup('Typeface','typeface',[['modern','Modern'],['poppins','Poppins'],['arial','Arial'],['verdana','Verdana'],['trebuchet','Trebuchet'],['serif','Editorial'],['georgia','Georgia'],['monospace','Monospace']])+
+    '<div class="mss-section"><h3>Typeface gallery</h3><div class="mss-font-gallery" role="group" aria-label="Typeface">'+
+    [['modern','Modern'],['poppins','Poppins'],['arial','Arial'],['verdana','Verdana'],['trebuchet','Humanist'],['serif','Editorial'],['georgia','Georgia'],['monospace','Monospace'],['custom','My font']]
+      .map(f=>'<button type="button" class="mss-font-choice" data-ms-set="typeface" data-ms-value="'+f[0]+'" aria-pressed="false"><span class="mss-font-glyph" data-ms-font-example="'+f[0]+'">Aa</span><strong>'+f[1]+'</strong></button>').join('')+
+    '</div></div>'+
     '<div class="mss-font-import"><div><strong>Upload your own font</strong><small data-ms-font-status>Choose a preset typeface or upload a font</small></div><button type="button" class="mss-data-action" data-ms-font-upload>Choose font</button><input id="msFontUpload" type="file" accept=".woff,.woff2,.ttf,.otf,font/woff,font/woff2" hidden></div>'+
     msGroup('Line spacing','lineSpacing',[['tight','Tight'],['comfortable','Comfortable'],['relaxed','Relaxed']]);
   const layout=msHeader('Your preferred rhythm.','Refine corners, spacing and surfaces throughout the on-screen workspace.')+
     msGroup('Interface density','density',[['compact','Compact'],['comfortable','Comfortable'],['spacious','Spacious']])+
-    msGroup('Corners','corners',[['rounded','Rounded'],['soft','Soft'],['square','Crisp'],['pill','Pill-shaped']])+
+    msGroup('Corner style','corners',[['square','Sharp'],['subtle','Subtle'],['rounded','Balanced'],['soft','Soft'],['pill','Pill-shaped']])+
     msGroup('Surface depth','surface',[['layered','Soft layers'],['flat','Minimal']]);
   const accessibility=msHeader('Accessible by choice.','These controls improve visibility across the on-screen workspace, including high contrast in dark mode.')+
     msToggle('High contrast','Stronger outlines and clearer labels.','contrast')+
@@ -293,7 +303,9 @@ function msMarkup(){
     msToggle('Prominent keyboard focus','Highlight the currently focused control.','focusRing')+
     msToggle('Larger touch targets','Make controls easier to tap on tablets and phones.','largeTargets')+
     msToggle('Underline links','Identify links without relying on color alone.','underlineLinks')+
-    msToggle('Enhanced text legibility','Increase control label clarity across the workspace.','readableLinks');
+    msToggle('Enhanced text legibility','Increase control label clarity across the workspace.','readableLinks')+
+    msToggle('Reduce transparency','Use stronger, more opaque backgrounds for overlays.','reduceTransparency')+
+    msToggle('Extra text spacing','Add breathing room between letters in the interface.','extraTextSpacing');
   const preferences=msHeader('Useful personal controls.','These preferences are functional and never touch medical records.')+
     msToggle('Remember last Settings section','Reopen the section where you left off.','rememberSection')+
     msToggle('Keyboard section shortcuts','Using a physical keyboard, Alt+1 to Alt+6 (Option+1 to Option+6 on Mac) opens Settings sections. No shortcut needed on tablets.','hotkeys')+
