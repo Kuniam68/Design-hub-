@@ -2019,7 +2019,7 @@ window.configureTemplateEditorActions=()=>{
  const download=document.getElementById('btnDownload');
  const print=document.getElementById('templatePrintButton');
  if(download){download.textContent=openingSaved?'📥 Download PDF':editingDetails?'✓ Save the Changes':'✓ Save the Template';download.title=openingSaved?'Download PDF and save template changes':editingDetails?'Download PDF, save changes and return to Templates & Favorites':'Download PDF, save template and return to Templates & Favorites';}
- if(print)print.hidden=!openingSaved;
+ if(print){print.hidden=!openingSaved;print.style.display=openingSaved?'':'none';}
 };
 window.beginFullPrescriptionTemplate=async()=>{
  if(!(await window.mediScriptConfirm('Create a new template?','Your current unsaved editor content will be replaced. Your doctor profile remains unchanged.','Yes',false,'No')))return;
