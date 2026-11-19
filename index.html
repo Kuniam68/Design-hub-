@@ -901,7 +901,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  if(action==='history'){toggle(false);window.openPrescriptionHistory();return;}
  if(action==='patients'){toggle(false);window.openPatientDirectory();return;}
  if(action==='templates'){toggle(false);window.openMedicineLibrary();return;}
- if(action==='prescription'){toggle(false);window.startNewPrescription();return;}
+ if(action==='prescription'){toggle(false);window.startNewPrescription(true);return;}
  notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
  });
 })();
@@ -2310,6 +2310,8 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
     toggleReferral();
     toggleMurmur();
     addMedicine();
+    // A new prescription must not retain its previous Prescription History editing link.
+    window.dispatchEvent(new Event('mediscript-new-prescription'));
     updatePreview();
     if (window.matchMedia('(max-width:900px), (orientation:portrait) and (max-width:1300px)').matches) {
       window.scrollTo({top:0,behavior:'smooth'});
@@ -2986,6 +2988,7 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
 (function(){
  const dialog=document.getElementById('historyDialog'),list=document.getElementById('historyList'),status=document.getElementById('historyStatus'),search=document.getElementById('historySearch');
  let records=[],busy=false,loadFailed=false,hasLoaded=false,editingSourceId='',patientHistoryScope=null;
+ window.addEventListener('mediscript-new-prescription',()=>{editingSourceId='';});
  const confirmation=document.getElementById('historyConfirmDialog');
  const confirmTitle=document.getElementById('historyConfirmTitle');
  const confirmDescription=document.getElementById('historyConfirmDescription');
