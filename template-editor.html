@@ -151,9 +151,8 @@ window.saveDoctorProfileToCloud=async function(){
   const user=auth.currentUser;
   if(!user){showProfileStatus('Please sign in first.',true);return false;}
   if(profileLoadedFor!==user.uid){showProfileStatus('Profile has not loaded successfully. Please reload before saving.',true);return false;}
-  const button=document.getElementById('profileSaveButton');
   const data=Object.fromEntries(profileFields.map(id=>[id,document.getElementById(id)?.value.trim()||'']));
-  if(button)button.disabled=true;
+
   showProfileStatus('Saving your profile securely…');
   try{
     await setDoc(doc(db,'doctors',user.uid),{...data,profilePhoto:doctorProfilePhoto,updatedAt:serverTimestamp()},{merge:true});
@@ -1635,7 +1634,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <div class="section-card" id="doctor-profile-section">
     <div class="section-title">
       Doctor & Chamber Profile
-      <button class="btn btn-sm" id="profileSaveButton" onclick="saveProfile()">💾 Save My Profile</button>
+      
     </div>
     <div class="row">
       <div class="form-group"><label>Doctor Name</label><input type="text" id="dName" placeholder="Dr. Name" oninput="updatePreview()"></div>
@@ -2235,14 +2234,6 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
   });
 
 
-  function saveProfile() {
-    if(typeof window.saveDoctorProfileToCloud!=='function'){
-      const el=document.getElementById('profileSaveStatus');
-      if(el)el.textContent='Profile service is loading. Please try again.';
-      return;
-    }
-    window.saveDoctorProfileToCloud();
-  }
 
     function toggleSystem(sys, isChecked) {
     document.getElementById(`sub-${sys}`).style.display = isChecked ? 'block' : 'none';
