@@ -43,7 +43,7 @@ function msRead(){
   msStorageKey=MS_STORAGE_PREFIX+(msAccount()||'device');
   msStorageOK=true;
   try{
-    const raw=JSON.parse(localStorage.getItem(msStorageKey)||'{}');
+    const raw=JSON.parse(localStorage.getItem(msStorageKey)||localStorage.getItem(MS_STORAGE_PREFIX+'device')||'{}');
     msPrefs=msSanitize(raw);
     msCurrent=msPrefs.rememberSection&&MS_SECTIONS.includes(raw.lastSection)?raw.lastSection:'appearance';
   }catch(error){
@@ -52,7 +52,9 @@ function msRead(){
 }
 function msWrite(){
   try{
-    localStorage.setItem(msStorageKey,JSON.stringify({...msPrefs,lastSection:msPrefs.rememberSection?msCurrent:'appearance'}));
+    const prefsJSON=JSON.stringify({...msPrefs,lastSection:msPrefs.rememberSection?msCurrent:'appearance'});
+    localStorage.setItem(msStorageKey,prefsJSON);
+    localStorage.setItem(MS_STORAGE_PREFIX+'device',prefsJSON);
     msStorageOK=true;
   }catch(error){msStorageOK=false;}
   msStorageStatus();
@@ -87,28 +89,63 @@ function msFontFamily(){
   const fonts={modern:'system-ui, sans-serif',serif:'Georgia, serif',poppins:'Poppins, system-ui, sans-serif',arial:'Arial, sans-serif',verdana:'Verdana, sans-serif',trebuchet:'Trebuchet MS, sans-serif',georgia:'Georgia, serif',monospace:'ui-monospace, SFMono-Regular, Menlo, monospace'};
   return msPrefs.typeface==='custom'&&msFontUrl?'MediScriptCustomFont, system-ui, sans-serif':fonts[msPrefs.typeface]||fonts.modern;
 }
-let msFontUrl='';
-async function msLoadFont(file){
+let msFontUrl='',msThemeWatchersReady=false,msFontRestorePromise=null;
+function msFontDB(){
+  return new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window))return reject(Error('Font storage unavailable'));
+    const r=indexedDB.open('mediscript-ui-font-v1',1);
+    r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('fonts'))r.result.createObjectStore('fonts');};
+    r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);
+  });
+}
+async function msStoreFont(file){
+  const db=await msFontDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('fonts','readwrite');
+    tx.objectStore('fonts').put(file,'browser-font');
+    tx.oncomplete=()=>{db.close();resolve();};
+    tx.onerror=()=>{db.close();reject(tx.error);};
+  });
+}
+async function msRestoreFont(){
+  if(msFontRestorePromise)return msFontRestorePromise;
+  msFontRestorePromise=(async()=>{
+    if(msPrefs.typeface!=='custom')return;
+    try{
+      const db=await msFontDB();
+      const file=await new Promise((resolve,reject)=>{
+        const r=db.transaction('fonts','readonly').objectStore('fonts').get('browser-font');
+        r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);
+      });
+      db.close();
+      if(file&&!msFontUrl)await msLoadFont(file,true);
+    }catch(error){console.info('Personal font not restored:',error?.message);}
+  })();
+  return msFontRestorePromise;
+}
+async function msLoadFont(file,restoring=false){
   if(!file)return;
   const ext=file.name.split('.').pop().toLowerCase();
-  if(!['woff','woff2','ttf','otf'].includes(ext)||file.size>3*1024*1024){msToast('Use a WOFF, WOFF2, TTF or OTF font under 3 MB');return;}
+  if(!['woff','woff2','ttf','otf'].includes(ext)||file.size>2*1024*1024||file.size<100){msToast('Use a WOFF, WOFF2, TTF or OTF font under 3 MB');return;}
   const next=URL.createObjectURL(file);
   try{
     const face=new FontFace('MediScriptCustomFont',`url("${next}")`);
     await face.load();document.fonts.add(face);
     if(msFontUrl)URL.revokeObjectURL(msFontUrl);
-    msFontUrl=next;msChange('typeface','custom');msToast('Custom font applied for this session');
+    msFontUrl=next;
+    if(restoring){msRender();}
+    else{
+      let saved=true;
+      try{await msStoreFont(file);}catch(_){saved=false;}
+      msChange('typeface','custom');
+      msToast(saved?'Personal font saved on this device':'Font applied for this session; local storage unavailable');
+    }
   }catch(e){URL.revokeObjectURL(next);msToast('Cannot read that font file');}
 }
-function msRender(){
-  if(!msDialog)return;
+function msApplyGlobal(){
   const accent=msAccent();
   const dark=msIsDark(),mode=msPrefs.theme==='dim'?'dim':dark?'dark':'light';
-  msDialog.dataset.mode=mode;
-  msDialog.dataset.themeChoice=msPrefs.theme;
-  msDialog.dataset.largeTargets=msPrefs.largeTargets?'true':'false';
-  msDialog.dataset.shortDescriptions=msPrefs.shortDescriptions?'true':'false';
-  // The application shell changes appearance; its six clinical editors do not.
+  // Apply visual appearance only; clinical print and PDF functions are untouched.
   document.documentElement.dataset.msShellTheme=mode;
   document.documentElement.dataset.msUiContrast=msPrefs.contrast?'high':'normal';
   document.documentElement.dataset.msUiCorners=msPrefs.corners;
@@ -120,6 +157,21 @@ function msRender(){
   if(spread){if(hi===rgb[0])hue=((rgb[1]-rgb[2])/spread)%6;else if(hi===rgb[1])hue=(rgb[2]-rgb[0])/spread+2;else hue=(rgb[0]-rgb[1])/spread+4;hue=(hue*60+360)%360;}
   document.documentElement.style.setProperty('--ms-rx-hue',(((hue-175+540)%360)-180)+'deg');
   document.documentElement.style.setProperty('--ms-app-font',msFontFamily());
+  document.documentElement.dataset.msUiScale=msPrefs.scale;
+  document.documentElement.dataset.msUiSpacing=msPrefs.lineSpacing;
+  document.documentElement.dataset.msUiMotion=msPrefs.reduceMotion?'reduce':'normal';
+  document.documentElement.dataset.msUiTargets=msPrefs.largeTargets?'large':'normal';
+  document.documentElement.dataset.msUiFocus=msPrefs.focusRing?'extra':'normal';
+}
+function msRender(){
+  msApplyGlobal();
+  if(!msDialog)return;
+  const accent=msAccent();
+  const dark=msIsDark(),mode=msPrefs.theme==='dim'?'dim':dark?'dark':'light';
+  msDialog.dataset.mode=mode;
+  msDialog.dataset.themeChoice=msPrefs.theme;
+  msDialog.dataset.largeTargets=msPrefs.largeTargets?'true':'false';
+  msDialog.dataset.shortDescriptions=msPrefs.shortDescriptions?'true':'false';
   msDialog.dataset.density=msPrefs.density;
   msDialog.dataset.scale=msPrefs.scale;
   msDialog.dataset.font=msPrefs.typeface;
@@ -142,7 +194,7 @@ function msRender(){
     button.setAttribute('aria-checked',String(Boolean(msPrefs[key])));
   });
   const customLabel=msDialog.querySelector('[data-ms-font-status]');
-  if(customLabel)customLabel.textContent=msPrefs.typeface==='custom'?(msFontUrl?'Custom font active for this session':'Upload a font to activate it'):'Choose a preset typeface or upload a font';
+  if(customLabel)customLabel.textContent=msPrefs.typeface==='custom'?(msFontUrl?'Personal font active on this device':'Upload a font to activate it'):'Choose a preset typeface or upload a font';
   const label=msPrefs.theme==='scheduled'?'Timed '+(dark?'night':'day'):msPrefs.theme==='dim'?'Soft dark':dark?'Dark':'Light';
   msDialog.querySelector('[data-ms-mode-label]').textContent=label+' · '+accent.name;
   msDialog.querySelector('[data-ms-summary]').textContent=
@@ -210,7 +262,7 @@ function msMarkup(){
     ['preferences','⚙','Preferences'],
     ['backup','↧','Backup & reset']
   ];
-  const appearance=msHeader('A workspace that feels right.','Choose a distinct look. Every option immediately changes this settings workspace; none modifies the clinical editor.')+
+  const appearance=msHeader('A workspace that feels right.','Theme and accent choices apply across the whole on-screen workspace, including the prescription preview. Print and PDF retain their original design.')+
     '<div class="mss-section"><h3>Color mode</h3><div class="mss-theme-grid" role="group" aria-label="Color mode">'+
     [['light','Light','mss-mini'],['dark','Dark','mss-mini mss-mini-dark'],['dim','Soft dark','mss-mini mss-mini-dim'],['system','System','mss-mini mss-mini-system'],['scheduled','Timed night','mss-mini mss-mini-scheduled']]
       .map(x=>'<button type="button" class="mss-theme" data-ms-set="theme" data-ms-value="'+x[0]+'" aria-pressed="false"><span class="'+x[2]+'"><span class="mss-mini-rail"></span><span class="mss-mini-lines"><i></i><i></i><i></i></span></span><span class="mss-theme-caption">'+x[1]+'<span class="mss-radio-indicator" aria-hidden="true"></span></span></button>').join('')+
@@ -220,21 +272,21 @@ function msMarkup(){
     '</div><div class="mss-section"><h3>Accent palette</h3><div class="mss-accent-list" role="group" aria-label="Accent palette">'+
     Object.entries(MS_ACCENTS).map(([key,value])=>'<button type="button" class="mss-accent-option" data-ms-set="accent" data-ms-value="'+key+'" aria-pressed="false"><span class="mss-accent-dot" style="--swatch:'+value.hex+'"></span>'+value.name+'</button>').join('')+
     '<button type="button" class="mss-accent-option" data-ms-set="accent" data-ms-value="custom" aria-pressed="false"><span class="mss-accent-dot mss-custom-dot"></span>Custom</button>'+
-    '</div><label class="mss-custom-picker"><span><strong>Custom accent color</strong><small>Choose any color for the Settings interface</small></span><input data-ms-custom-color type="color" aria-label="Choose custom accent color" value="#6958bf"></label></div>'+
+    '</div><label class="mss-custom-picker"><span><strong>Custom accent color</strong><small>Choose a color for the on-screen workspace</small></span><input data-ms-custom-color type="color" aria-label="Choose custom accent color" value="#6958bf"></label></div>'+
     '<div class="mss-section"><h3>Professional presets</h3><div class="mss-presets">'+
     [['daylight','Day Shift','Bright and balanced'],['midnight','Midnight Rounds','Dark with reduced motion'],['clarity','High Clarity','Large text and contrast'],['focus','Quiet Focus','Compact, calm and dark'],['twilight','Twilight','Gentle low-glare mode'],['auto','Auto Night','Changes with the clock']]
       .map(p=>'<button type="button" class="mss-preset" data-ms-preset="'+p[0]+'"><strong>'+p[1]+'</strong><small>'+p[2]+'</small></button>').join('')+
     '</div></div>';
-  const typography=msHeader('Readable by design.','Adjust the actual Settings interface, not a sample box.')+
+  const typography=msHeader('Readable by design.','Your chosen font affects the on-screen workspace, not the original printed prescription.')+
     msGroup('Reading size','scale',[['small','Small'],['standard','Standard'],['large','Large']])+
     msGroup('Typeface','typeface',[['modern','Modern'],['poppins','Poppins'],['arial','Arial'],['verdana','Verdana'],['trebuchet','Trebuchet'],['serif','Editorial'],['georgia','Georgia'],['monospace','Monospace']])+
     '<div class="mss-font-import"><div><strong>Upload your own font</strong><small data-ms-font-status>Choose a preset typeface or upload a font</small></div><button type="button" class="mss-data-action" data-ms-font-upload>Choose font</button><input id="msFontUpload" type="file" accept=".woff,.woff2,.ttf,.otf,font/woff,font/woff2" hidden></div>'+
     msGroup('Line spacing','lineSpacing',[['tight','Tight'],['comfortable','Comfortable'],['relaxed','Relaxed']]);
-  const layout=msHeader('Your preferred rhythm.','Refine spacing and surfaces in the Settings studio.')+
+  const layout=msHeader('Your preferred rhythm.','Refine corners, spacing and surfaces throughout the on-screen workspace.')+
     msGroup('Interface density','density',[['compact','Compact'],['comfortable','Comfortable'],['spacious','Spacious']])+
     msGroup('Corners','corners',[['rounded','Rounded'],['soft','Soft'],['square','Crisp'],['pill','Pill-shaped']])+
     msGroup('Surface depth','surface',[['layered','Soft layers'],['flat','Minimal']]);
-  const accessibility=msHeader('Accessible by choice.','Changes take effect immediately in every Settings section.')+
+  const accessibility=msHeader('Accessible by choice.','These controls improve visibility across the on-screen workspace, including high contrast in dark mode.')+
     msToggle('High contrast','Stronger outlines and clearer labels.','contrast')+
     msToggle('Reduce motion','Remove animations and transitions.','reduceMotion')+
     msToggle('Stronger labels','Make descriptions and control labels easier to read.','boldLabels')+
@@ -244,7 +296,7 @@ function msMarkup(){
     msToggle('Enhanced text legibility','Increase control label clarity across the workspace.','readableLinks');
   const preferences=msHeader('Useful personal controls.','These preferences are functional and never touch medical records.')+
     msToggle('Remember last Settings section','Reopen the section where you left off.','rememberSection')+
-    msToggle('Keyboard section shortcuts','While Settings is open, use Alt+1 through Alt+6.','hotkeys')+
+    msToggle('Keyboard section shortcuts','Using a physical keyboard, Alt+1 to Alt+6 (Option+1 to Option+6 on Mac) opens Settings sections. No shortcut needed on tablets.','hotkeys')+
     msToggle('Compact explanations','Hide extra help text while retaining all functional controls.','shortDescriptions')+
     '<div class="mss-section"><h3>Current configuration</h3><p class="mss-current" data-ms-summary></p>'+
     '<button type="button" class="mss-data-action mss-inline-action" data-ms-copy><strong>Copy settings summary</strong><span aria-hidden="true">⧉</span></button></div>';
@@ -255,7 +307,7 @@ function msMarkup(){
       '<button type="button" class="mss-data-action" data-ms-reset><strong>Restore defaults</strong><small>Reset appearance settings only</small></button>'+
     '</div>'+
     '<input id="msSettingsImport" type="file" accept=".json,application/json" hidden aria-label="Import appearance preferences">'+
-    '<p class="mss-hint mss-backup-note">JSON is machine-readable and can restore settings. A PDF is readable, but cannot automatically restore preferences. No clinical data is included.</p>';
+    '<p class="mss-hint mss-backup-note">JSON is machine-readable so Import can reapply settings later. A PDF is readable but cannot restore preferences automatically. Uploaded personal fonts are kept separately on this device; no clinical data is included.</p>';
   const panels={appearance,typography,layout,accessibility,preferences,backup};
   return [
     '<div class="mss-layout"><aside class="mss-sidebar">',
@@ -359,6 +411,11 @@ function msCreate(){
     msSection(next);msDialog.querySelector('[data-ms-tab="'+next+'"]').focus();
   });
   msDialog.addEventListener('close',()=>document.getElementById('workspaceMenuButton')?.focus({preventScroll:true}));
+  msInstallThemeWatchers();
+}
+function msInstallThemeWatchers(){
+  if(msThemeWatchersReady)return;
+  msThemeWatchersReady=true;
   window.setInterval(()=>{if(msPrefs.theme==='scheduled')msRender();},60000);
   const media=window.matchMedia?.('(prefers-color-scheme: dark)');
   if(media){
@@ -374,17 +431,25 @@ function msEnsureCss(){
     if(existing){resolve();return;}
     const link=document.createElement('link');
     link.id='mssSettingsStyles';link.rel='stylesheet';
-    link.href=new URL('./settings-portal.css?v=6',import.meta.url).href;
+    link.href=new URL('./settings-portal.css?v=7',import.meta.url).href;
     link.onload=resolve;link.onerror=resolve;
     document.head.appendChild(link);
     setTimeout(resolve,2000);
   });
   return msStylePromise;
 }
+export async function initializeSettingsAppearance(){
+  await msEnsureCss();
+  msRead();
+  msInstallThemeWatchers();
+  msRender();
+  void msRestoreFont();
+}
 export async function openSettings(){
   await msEnsureCss();
   if(!msDialog)msCreate();
-  msRead();msRender();msSection(msCurrent);
+  msRead();msInstallThemeWatchers();msRender();msSection(msCurrent);
+  void msRestoreFont();
   if(!msDialog.open)msDialog.showModal();
   msDialog.querySelector('[data-ms-close]').focus({preventScroll:true});
 }
