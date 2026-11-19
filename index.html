@@ -1343,6 +1343,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  function fillRow(row,values){const controls=Array.from(row.querySelectorAll('input,select,textarea'));controls.forEach((control,i)=>{if(i>=values.length)return;if(control.type==='checkbox')control.checked=Boolean(values[i]);else control.value=String(values[i]??'');});const form=row.querySelector('.m-form');if(form&&typeof toggleFormMode==='function')toggleFormMode(form);if(typeof updatePreview==='function')updatePreview();}
  function apply(item){if(!item.medicines.length)return;const existing=Array.from(document.querySelectorAll('#med-container .med-item')).filter(row=>row.querySelector('.m-name')?.value.trim());if(existing.length&&!window.confirm('Add these medicines to the current prescription? Existing medicines will be kept. Review all details before prescribing.'))return;
  dialog.close();for(const values of item.medicines){if(typeof addMedicine!=='function'){status.textContent='Medicine editor is unavailable.';return;}addMedicine();const rows=document.querySelectorAll('#med-container .med-item');fillRow(rows[rows.length-1],values);}
+ if(item.type==='templates'&&typeof item.advice==='string'){const advice=document.getElementById('advice');if(advice){if(advice.value.trim()&&advice.value!==item.advice&&!window.confirm('Replace the current advice with the saved template advice? Existing advice will be lost.')){status.textContent='Medicines added; existing advice kept.';}else{advice.value=item.advice;advice.dispatchEvent(new Event('input',{bubbles:true}));}}}
  if(typeof updatePreview==='function')updatePreview();document.getElementById('med-container')?.scrollIntoView({behavior:'smooth',block:'center'});}
  function setTab(value){tab=value;tabs.forEach(b=>{const on=b.dataset.mlTab===value;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});create.textContent=value==='templates'?'＋ Create template':'☆ Save current medicine';editor.hidden=true;editing=null;search.value='';render();}
  function render(){grid.replaceChildren();document.getElementById('mlTemplateCount').textContent=items.filter(x=>x.type==='templates').length;document.getElementById('mlFavoriteCount').textContent=items.filter(x=>x.type==='favorites').length;
@@ -1359,10 +1360,27 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  if(tab==='favorites'&&medicines.length>1){status.textContent='To save a single medicine favorite, leave only that medicine in the editor. Templates can save combinations.';return;}
  draft=(tab==='favorites'?medicines.slice(0,1):medicines).map(v=>v.slice());document.getElementById('mlName').value=tab==='favorites'?String(draft[0][1]||''):'';document.getElementById('mlNotes').value='';document.getElementById('mlEditorTitle').textContent=tab==='templates'?'Create prescription template':'Save medicine favorite';document.getElementById('mlEditorHint').textContent='Saving '+draft.length+' medicine(s) from the current prescription. No patient data is included.';editor.hidden=false;editor.scrollIntoView({block:'nearest',behavior:'smooth'});}
  document.getElementById('mlSave').onclick=()=>{const name=document.getElementById('mlName').value.trim(),notes=document.getElementById('mlNotes').value.trim();if(!name){status.textContent='Please enter a collection name.';return;}if(!draft.length){status.textContent='No medicine details available.';return;}
- const before=items.slice();if(editing){const item=items.find(x=>x.id===editing);if(item){item.name=name;item.notes=notes;}}else items.push({id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:tab,name,notes,medicines:draft,created:Date.now()});
+ const before=JSON.parse(JSON.stringify(items));if(editing){const item=items.find(x=>x.id===editing);if(item){item.name=name;item.notes=notes;}}else items.push({id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:tab,name,notes,medicines:draft,advice:tab==='templates'?document.getElementById('advice')?.value||'':'',created:Date.now()});
  if(!persist()){items=before;return;}editor.hidden=true;editing=null;status.textContent='Saved to this browser’s personal library.';render();};
  create.onclick=start;document.getElementById('mlCancel').onclick=()=>{editor.hidden=true;editing=null;};
  document.getElementById('mlClose').onclick=()=>dialog.close();tabs.forEach(b=>b.onclick=()=>setTab(b.dataset.mlTab));search.addEventListener('input',render);
+ window.saveHistoryAsTemplate=(record)=>{
+  if(!record||!Array.isArray(record.medicines))return false;
+  const medicines=record.medicines.map(x=>Array.isArray(x)?x:(Array.isArray(x?.values)?x.values:[])).filter(v=>v.some(x=>String(x||'').trim()));
+  if(!medicines.length){window.alert('This prescription has no medicines to save as a template.');return false;}
+  const name=window.prompt('Name this treatment template (for example: Pneumonia — adult):',String(record.diagnosis||'').trim()||'New treatment template');
+  if(name===null)return false;
+  if(!name.trim()){window.alert('A template name is required.');return false;}
+  items=read();
+  const adviceIndex=Array.from(document.querySelectorAll('.form-panel input,.form-panel select,.form-panel textarea')).filter(el=>!el.closest('#med-container')&&!el.closest('#historyDialog')).findIndex(el=>el.id==='advice');
+  let advice='';
+  if(record.fields&&adviceIndex>=0)advice=String(record.fields[String(adviceIndex)]||'');
+  const item={id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:'templates',name:name.trim().slice(0,100),notes:'Saved from Prescription History · Review and personalize before prescribing',medicines,advice,created:Date.now()};
+  items.push(item);
+  if(!persist())return false;
+  status.textContent='Treatment template created. Open Templates & Favorites to use it.';
+  return true;
+ };
  window.openMedicineLibrary=()=>{items=read();status.textContent='';dialog.showModal();setTab('templates');};
 })();
 </script>
@@ -2774,6 +2792,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
      card.append(meta);
      if(r.diagnosis)card.append(el('p','history-record-diagnosis',r.diagnosis.slice(0,240)));
      const actions=el('div','history-record-buttons');
+     actions.append(button('▤ Make Template','',()=>{
+       if(window.saveHistoryAsTemplate?.(r)){notify('Treatment template saved to your library.');}
+     }));
      actions.append(button('↗ Open prescription','history-open',async()=>{
        if(hasUnsavedWork()&&!(await askHistoryConfirmation('open',r.patientName)))return;
        try{restore(r);editingSourceId=r.id;dialog.close();document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});}
