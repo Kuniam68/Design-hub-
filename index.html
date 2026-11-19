@@ -1432,7 +1432,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  async function apply(item){if(item.fullRecord){
   if(typeof window.restoreMediScriptPrescription!=='function'){status.textContent='Prescription editor unavailable.';return;}
   if(!(await window.mediScriptConfirm('Add to prescription?','Load this template into the normal editable prescription form? Unsaved prescription fields will be replaced.','Yes',false,'No')))return;
-  try{const record=JSON.parse(JSON.stringify(item.fullRecord));dialog.close();window.restoreMediScriptPrescription(record);}
+  try{const record=JSON.parse(JSON.stringify(item.fullRecord));dialog.close();window.setMediScriptTemplateMode?.(false);window.restoreMediScriptPrescription(record);}
   catch(error){console.error('Template application failed',error);status.textContent='Unable to apply template.';}
   return;
  }if(!item.medicines.length)return;const existing=Array.from(document.querySelectorAll('#med-container .med-item')).filter(row=>row.querySelector('.m-name')?.value.trim());if(existing.length&&!(await window.mediScriptConfirm('Add template medicines?','Existing medicines will be kept. Review all details before prescribing.','Add medicines')))return;
@@ -1446,7 +1446,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  if(!shown.length){grid.append(node('div','ml-empty',q?'No matching items. Try a different search.':tab==='templates'?'No templates yet. Create your first one using medicines in the prescription editor.':'No medicine favorites yet. Save a medicine from your current prescription.'));return;}
  for(const item of shown){const card=node('article','ml-card'),top=node('div','ml-card-top'),icon=node('div','ml-icon',item.type==='templates'?'▤':'☆'),info=node('div'),actions=node('div','ml-card-actions');
  info.append(node('h3','',item.name),node('p','',item.notes||'Personal clinical shortcut'));top.append(icon,info);card.append(top,node('span','ml-tag',item.medicines.length+' '+(item.medicines.length===1?'medicine':'medicines')));
- const use=node('button','ml-primary',item.fullRecord?'↗ Open full template':'＋ Add to prescription');use.type='button';use.onclick=()=>apply(item);
+ const use=node('button','ml-primary','＋ Add to prescription');use.type='button';use.onclick=()=>apply(item);
  const edit=node('button','ml-secondary','Edit details');edit.type='button';edit.onclick=()=>{if(item.type==='templates'){window.location.assign('./template-editor.html?templateId='+encodeURIComponent(item.id)+'&edit=1');return;}editing=item.id;draft=item.medicines.map(v=>v.slice());document.getElementById('mlName').value=item.name;document.getElementById('mlNotes').value=item.notes||'';document.getElementById('mlEditorTitle').textContent='Edit library item';document.getElementById('mlEditorHint').textContent='Update the label and notes. Medicine details stay unchanged.';editor.hidden=false;editor.scrollIntoView({block:'nearest',behavior:'smooth'});};
  const del=node('button','ml-danger','Delete');del.type='button';del.onclick=async()=>{if(!(await window.mediScriptConfirm('Delete library item?','This saved item will be permanently deleted. This cannot be undone.','Delete item',true)))return;items=items.filter(x=>x.id!==item.id);if(persist()){status.textContent='Item deleted.';render();}};
  actions.append(use,edit,del);card.append(actions);grid.append(card);}
@@ -1482,7 +1482,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   const adviceIndex=Array.from(document.querySelectorAll('.form-panel input,.form-panel select,.form-panel textarea')).filter(el=>!el.closest('#doctor-profile-section')&&!el.closest('#med-container')&&el.type!=='hidden'&&el.type!=='file').findIndex(el=>el.id==='advice');
   let advice='';
   if(record.fields&&adviceIndex>=0)advice=String(record.fields[String(adviceIndex)]||'');
-  const item={id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:'templates',name:name.trim().slice(0,100),notes:'Saved from Prescription History · Review and personalize before prescribing',medicines,advice,created:Date.now()};
+  const item={id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:'templates',name:name.trim().slice(0,100),notes:'Saved from Prescription History · Review and personalize before prescribing',medicines,advice,fullRecord:JSON.parse(JSON.stringify(record)),created:Date.now()};
   items.push(item);
   if(!persist()){items.pop();return;}
   templateConfirm.close();
@@ -1508,8 +1508,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    return true;
   }catch(error){console.error('Template save failed:',error);status.textContent='Template could not be saved: '+String(error?.message||'Unexpected error');window.mediScriptConfirm?.('Template not saved','The template could not be saved. Your prescription editor is still available. Please retry after checking browser storage.','OK',false,'Close');return false;}
  };
- window.openMedicineLibrary=()=>{items=read();status.textContent='';if(!dialog.open)dialog.showModal();setTab('templates');};
- if(new URLSearchParams(location.search).get('openTemplates')==='1')window.addEventListener('load',()=>{window.openMedicineLibrary();history.replaceState(null,'',location.pathname);});
+ window.openMedicineLibrary=()=>{items=read();status.textContent='';if(!dialog.open)dialog.showModal();setTab('templates');dialog.scrollTop=0;};
+ if(new URLSearchParams(location.search).get('openTemplates')==='1')window.addEventListener('load',()=>{history.scrollRestoration='manual';window.scrollTo(0,0);window.openMedicineLibrary();history.replaceState(null,'',location.pathname);requestAnimationFrame(()=>{window.scrollTo(0,0);const d=document.getElementById('medicineLibraryDialog');if(d)d.scrollTop=0;});});
 })();
 </script>
 <dialog class="patient-directory" id="patientDirectoryDialog" aria-labelledby="pdTitle">
