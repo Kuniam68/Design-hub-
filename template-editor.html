@@ -2115,7 +2115,30 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
     if(window.MEDISCRIPT_TEMPLATE_ONLY){
       window.setMediScriptTemplateMode?.(true,'New prescription template');
       const templateId=new URLSearchParams(location.search).get('templateId');
-      if(templateId){try{const saved=JSON.parse(localStorage.getItem('mediscript-shortcuts-v1')||'[]');const item=Array.isArray(saved)?saved.find(x=>x.id===templateId&&x.fullRecord):null;if(item){window.mediscriptTemplateId=item.id;window.setMediScriptTemplateMode(true,item.name);setTimeout(()=>window.restoreMediScriptPrescription?.(item.fullRecord),0);}else window.mediScriptConfirm?.('Template unavailable','The selected template could not be found in this browser.','OK',false,'Close');}catch(e){console.error('Unable to open template',e);}}
+      if(templateId){try{
+        const saved=JSON.parse(localStorage.getItem('mediscript-shortcuts-v1')||'[]');
+        const item=Array.isArray(saved)?saved.find(x=>x.id===templateId&&x.type==='templates'):null;
+        if(item){
+          window.mediscriptTemplateId=item.id;
+          window.setMediScriptTemplateMode(true,item.name);
+          if(item.fullRecord){window.restoreMediScriptPrescription?.(item.fullRecord);}
+          else{
+            const container=document.getElementById('med-container');
+            container.replaceChildren();medCount=0;
+            (item.medicines||[]).forEach(values=>{
+              addMedicine();
+              const row=container.lastElementChild;
+              const controls=Array.from(row.querySelectorAll('input,select,textarea'));
+              controls.forEach((control,i)=>{if(i<values.length)applyValue(control,values[i]);});
+              const form=row.querySelector('.m-form');if(form)toggleFormMode(form);
+              controls.filter(el=>el.tagName==='SELECT').forEach(el=>{if(el.classList.contains('m-unit')||el.classList.contains('i-unit'))toggleCustom(el);});
+            });
+            if(!container.children.length)addMedicine();
+            if(typeof item.advice==='string')document.getElementById('advice').value=item.advice;
+            updatePreview();
+          }
+        }else window.mediScriptConfirm?.('Template unavailable','The selected template could not be found in this browser.','OK',false,'Close');
+      }catch(e){console.error('Unable to open template',e);window.mediScriptConfirm?.('Unable to load template','Please return to the template collection and try again.','OK',false,'Close');}}
     }
   };
 
