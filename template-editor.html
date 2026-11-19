@@ -1493,7 +1493,6 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    if(existing){existing.fullRecord=fullRecord;existing.medicines=medicines;existing.name=name;existing.created=Date.now();}
    else saved.push({id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:'templates',name,notes:'Complete prescription template',medicines,advice:'',fullRecord,created:Date.now()});
    localStorage.setItem(storageKey,JSON.stringify(saved));
-   window.location.assign('./index.html?openTemplates=1');
    return true;
   }catch(error){
    console.error('Template save failed',error);
@@ -2011,11 +2010,12 @@ window.setMediScriptTemplateMode=(enabled,name='')=>{
  document.getElementById('templateWorkspaceBanner').hidden=false;
 };
 window.addEventListener('DOMContentLoaded',window.configureTemplateActions);
+window.addEventListener('pageshow',()=>window.configureTemplateActions?.());
 window.configureTemplateActions=()=>{
  const editing=new URLSearchParams(location.search).get('edit')==='1';
  const save=document.getElementById('btnDownload');
  const print=document.getElementById('templatePrintButton');
- save.textContent=editing?'✓ Save the Changes':'✓ Save the Template';
+ save.textContent=editing?'Save the Changes':'Save the Template';
  save.title=editing?'Update the existing saved template':'Save a new template to Templates & Favorites';
  if(print){print.hidden=true;print.style.display='none';}
 };
@@ -2794,7 +2794,6 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
   }
   /* ===== PDF EXPORT ===== */
   async function downloadPDF() {
-    if(window.MEDISCRIPT_TEMPLATE_ONLY){window.saveFullPrescriptionTemplate?.();return;}
     updatePreview();
 
     const btn = document.getElementById('btnDownload');
@@ -2877,7 +2876,7 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      if(window.MEDISCRIPT_TEMPLATE_ONLY||window.mediscriptTemplateMode){const saved=window.saveFullPrescriptionTemplate?.();if(saved!==true)console.error('Template download completed, but template storage did not confirm success.');}else window.capturePrescriptionToHistory?.();
+      if(window.MEDISCRIPT_TEMPLATE_ONLY||window.mediscriptTemplateMode){const saved=window.saveFullPrescriptionTemplate?.();if(saved===true)setTimeout(()=>window.location.assign('./index.html?openTemplates=1'),900);else console.error('Template PDF generated but template storage did not confirm success.');}else window.capturePrescriptionToHistory?.();
       setTimeout(() => URL.revokeObjectURL(url), 120000);
 
     } catch (err) {
