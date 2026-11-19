@@ -1244,6 +1244,16 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .pd-filter:hover{transform:translateY(-1px);border-color:#70b9a5}
 .pd-filter.active{background:#087c70;border-color:#087c70;color:white;box-shadow:0 5px 15px #087c7030}
 .pd-filter:focus-visible{outline:3px solid #19a999;outline-offset:2px}
+.pd-sort-wrap{position:relative;margin-left:auto}
+.pd-sort-trigger{display:flex;align-items:center;gap:9px;background:#e6f4ed;border-color:#b8dacb;color:#145e51}
+.pd-sort-trigger #pdSortLabel{font-size:11px;color:#527c70;font-weight:500}
+.pd-sort-menu{position:absolute;right:0;top:calc(100% + 9px);z-index:40;width:min(270px,80vw);max-height:340px;overflow:auto;padding:8px;background:#fff;border:1px solid #cde5d9;border-radius:16px;box-shadow:0 18px 45px #083c3260}
+.pd-sort-menu[hidden]{display:none!important}
+.pd-sort-heading{font-size:10px;font-weight:800;letter-spacing:1.4px;color:#76978b;padding:10px 12px}
+.pd-sort-menu button{display:block;width:100%;padding:12px;border:0;border-radius:10px;background:transparent;color:#28594e;text-align:left;font-size:12px;font-weight:650;cursor:pointer}
+.pd-sort-menu button:hover,.pd-sort-menu button:focus-visible{background:#eaf6ef;outline:none}
+.pd-sort-menu button.is-selected{background:#e3f4eb;color:#087c70;font-weight:800}
+
 .pd-results{font-size:12px;color:#68887d;margin-bottom:14px}
 .pd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .pd-card{background:white;border:1px solid #e0ece6;border-radius:19px;padding:19px;box-shadow:0 6px 23px #0b4d3d0a}
@@ -1269,16 +1279,25 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .pd-visit strong{display:block;font-size:13px}
 .pd-visit small{font-size:11px;color:#68887d}
 .pd-visit button{border:1px solid #bad7ca;border-radius:9px;background:white;color:#0a7668;padding:9px 12px;font-weight:700;font-size:11px;cursor:pointer}
-@media(max-width:640px){.patient-directory{width:calc(100vw - 16px);border-radius:19px}.pd-hero{padding:30px 19px 24px}.pd-hero h2{font-size:26px}.pd-body{padding:17px 14px 25px}.pd-grid{grid-template-columns:1fr}.pd-filter-tabs{padding:9px;gap:7px}.pd-filter{padding:10px 12px;font-size:11px}.pd-card{padding:15px}}
+@media(max-width:640px){.patient-directory{width:calc(100vw - 16px);border-radius:19px}.pd-hero{padding:30px 19px 24px}.pd-hero h2{font-size:26px}.pd-body{padding:17px 14px 25px}.pd-grid{grid-template-columns:1fr}.pd-filter-tabs{padding:9px;gap:7px}.pd-filter{padding:10px 12px;font-size:11px}.pd-sort-wrap{margin-left:0}.pd-sort-trigger #pdSortLabel{display:none}.pd-card{padding:15px}}
 </style>
 <dialog class="patient-directory" id="patientDirectoryDialog" aria-labelledby="pdTitle">
  <header class="pd-hero"><button type="button" class="pd-close" id="pdClose" aria-label="Close Patient Directory">×</button><div class="pd-kicker">MEDISCRIPT PRO · PATIENT CARE</div><h2 id="pdTitle">Patient Directory</h2><p>A thoughtful home for your patients and their prescription journeys. Find the right record, faster.</p><div class="pd-stats"><div class="pd-stat"><strong id="pdPatientCount">—</strong><small>Patients</small></div><div class="pd-stat"><strong id="pdRxCount">—</strong><small>Prescriptions</small></div><div class="pd-stat"><strong id="pdSavedCount">—</strong><small>Retained records</small></div></div></header>
- <main class="pd-body"><div class="pd-toolbar"><label class="pd-search"><span aria-hidden="true">⌕</span><input type="search" id="pdSearch" placeholder="Search patient name, phone, diagnosis…" aria-label="Search patients"></label><div class="pd-filter-tabs" role="group" aria-label="Filter and sort patients"><button type="button" class="pd-filter active" data-pd-filter="recent" aria-pressed="true">◷ Recently Active</button><button type="button" class="pd-filter" data-pd-filter="name" aria-pressed="false">A–Z</button><button type="button" class="pd-filter" data-pd-filter="visits" aria-pressed="false">▤ Most Prescriptions</button><button type="button" class="pd-filter" data-pd-filter="saved" aria-pressed="false">✓ Saved Patients</button><button type="button" class="pd-filter" data-pd-filter="frequent" aria-pressed="false">✦ Frequent Patients</button></div></div><div id="pdStatus" class="pd-results" role="status">Loading patient directory…</div><section class="pd-detail" id="pdDetail" hidden aria-label="Patient details"></section><div class="pd-grid" id="pdGrid"></div></main>
+ <main class="pd-body"><div class="pd-toolbar"><label class="pd-search"><span aria-hidden="true">⌕</span><input type="search" id="pdSearch" placeholder="Search patient name, phone, diagnosis…" aria-label="Search patients"></label><div class="pd-filter-tabs" role="group" aria-label="Filter patients"><button type="button" class="pd-filter active" data-pd-filter="recent" aria-pressed="true">◷ Recent</button><button type="button" class="pd-filter" data-pd-filter="saved" aria-pressed="false">✓ Saved Patients</button><button type="button" class="pd-filter" data-pd-filter="frequent" aria-pressed="false">✦ Frequent Patients</button><div class="pd-sort-wrap"><button type="button" class="pd-filter pd-sort-trigger" id="pdSortTrigger" aria-haspopup="true" aria-expanded="false" aria-controls="pdSortMenu">↕ Sort by <span id="pdSortLabel">Newest first</span> <span aria-hidden="true">⌄</span></button><div class="pd-sort-menu" id="pdSortMenu" hidden role="group" aria-label="Sort patients"><div class="pd-sort-heading">SORT PATIENTS</div><button type="button" data-pd-sort="newest">◷ Newest first</button><button type="button" data-pd-sort="oldest">◴ Oldest first</button><button type="button" data-pd-sort="az">↓ Name A–Z</button><button type="button" data-pd-sort="za">↑ Name Z–A</button><button type="button" data-pd-sort="most">▤ Most prescriptions</button><button type="button" data-pd-sort="least">▤ Fewest prescriptions</button><button type="button" data-pd-sort="ageAsc">Age · youngest first</button><button type="button" data-pd-sort="ageDesc">Age · oldest first</button></div></div></div></div><div id="pdStatus" class="pd-results" role="status">Loading patient directory…</div><section class="pd-detail" id="pdDetail" hidden aria-label="Patient details"></section><div class="pd-grid" id="pdGrid"></div></main>
 </dialog>
 <script>
 (function(){
  const dialog=document.getElementById('patientDirectoryDialog'),grid=document.getElementById('pdGrid'),status=document.getElementById('pdStatus'),search=document.getElementById('pdSearch'),filters=Array.from(dialog.querySelectorAll('[data-pd-filter]')),detail=document.getElementById('pdDetail');
- let patients=[],selected=null,loading=false,activeFilter='recent';
+ let patients=[],selected=null,loading=false,activeFilter='recent',sortMode='newest';
+ const sortTrigger=document.getElementById('pdSortTrigger'),sortMenu=document.getElementById('pdSortMenu'),sortLabel=document.getElementById('pdSortLabel');
+ const sortOptions=Array.from(sortMenu.querySelectorAll('[data-pd-sort]'));
+ function closeSort(){sortMenu.hidden=true;sortTrigger.setAttribute('aria-expanded','false');}
+ function setSort(value){sortMode=value;sortOptions.forEach(b=>{const active=b.dataset.pdSort===value;b.classList.toggle('is-selected',active);b.setAttribute('aria-pressed',String(active));if(active)sortLabel.textContent=b.textContent.trim().replace(/^[^\w]+/,'');});closeSort();render();}
+ sortTrigger.addEventListener('click',()=>{const opening=sortMenu.hidden;sortMenu.hidden=!opening;sortTrigger.setAttribute('aria-expanded',String(opening));});
+ sortOptions.forEach(b=>b.addEventListener('click',()=>setSort(b.dataset.pdSort)));
+ document.addEventListener('pointerdown',e=>{if(!e.target.closest('.pd-sort-wrap'))closeSort();});
+ sortMenu.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSort();sortTrigger.focus();}});
+
  function setFilter(value){activeFilter=value;filters.forEach(b=>{const active=b.dataset.pdFilter===value;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});render();}
  const el=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n;};
  const stamp=r=>{const t=r.createdAt;return typeof t?.toMillis==='function'?t.toMillis():typeof t?.seconds==='number'?t.seconds*1000:0;};
@@ -1312,7 +1331,15 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   let shown=patients.filter(p=>[p.name,p.phone,p.age,...p.records.map(r=>r.diagnosis||'')].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
   if(activeFilter==='saved')shown=shown.filter(p=>p.records.some(r=>r.saved||r.favorite));
   if(activeFilter==='frequent')shown=shown.filter(p=>p.records.length>=3);
-  if(activeFilter==='name')shown.sort((a,b)=>a.name.localeCompare(b.name));else if(activeFilter==='visits'||activeFilter==='frequent')shown.sort((a,b)=>b.records.length-a.records.length||b.last-a.last);else shown.sort((a,b)=>b.last-a.last);
+  const age=p=>{const n=Number(p.age);return p.age!==''&&Number.isFinite(n)&&n>=0?n:null;};
+  const byRecent=(a,b)=>b.last-a.last;
+  if(sortMode==='az')shown.sort((a,b)=>a.name.localeCompare(b.name)||byRecent(a,b));
+  else if(sortMode==='za')shown.sort((a,b)=>b.name.localeCompare(a.name)||byRecent(a,b));
+  else if(sortMode==='oldest')shown.sort((a,b)=>a.last-b.last);
+  else if(sortMode==='most')shown.sort((a,b)=>b.records.length-a.records.length||byRecent(a,b));
+  else if(sortMode==='least')shown.sort((a,b)=>a.records.length-b.records.length||byRecent(a,b));
+  else if(sortMode==='ageAsc'||sortMode==='ageDesc')shown.sort((a,b)=>{const x=age(a),y=age(b);if(x===null)return y===null?byRecent(a,b):1;if(y===null)return -1;return (sortMode==='ageAsc'?x-y:y-x)||byRecent(a,b);});
+  else shown.sort(byRecent);
   status.textContent=shown.length+' of '+patients.length+' patients · Grouped by name, phone and age. Confirm identity before using a record.';
   if(!shown.length){grid.append(el('div','pd-empty',patients.length?'No patients match your search. Try another name or phone number.':'No patients found yet. Download or print a prescription to start building your directory.'));return;}
   for(const p of shown){
@@ -1324,7 +1351,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   }
  }
  async function open(){
-  dialog.showModal();selected=null;detail.hidden=true;search.value='';activeFilter='recent';filters.forEach(b=>{const active=b.dataset.pdFilter==='recent';b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});grid.replaceChildren();status.textContent='Loading your private patient records…';
+  dialog.showModal();selected=null;detail.hidden=true;search.value='';activeFilter='recent';setSort('newest');filters.forEach(b=>{const active=b.dataset.pdFilter==='recent';b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});grid.replaceChildren();status.textContent='Loading your private patient records…';
   if(loading)return;loading=true;
   try{const records=await window.historyCloud.list();patients=collect(records);document.getElementById('pdPatientCount').textContent=patients.length;document.getElementById('pdRxCount').textContent=records.length;document.getElementById('pdSavedCount').textContent=records.filter(r=>r.saved||r.favorite).length;render();}
   catch(err){grid.replaceChildren(el('div','pd-empty','Unable to load patients. Check your connection and Firebase access, then reopen the directory.'));status.textContent='Patient directory unavailable';console.error('Patient directory error',err);}
