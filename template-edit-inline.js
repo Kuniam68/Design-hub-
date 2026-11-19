@@ -63,8 +63,11 @@
       const record = window.getMediScriptPrescriptionSnapshot?.();
       if (!validRecord(record)) throw new Error('The editable prescription is unavailable.');
       const medicines = rows(record.medicines);
-      if (!medicines.length) {
-        throw new Error('No medicine names are present. The original template was not overwritten.');
+      // A zero-medicine template can contain advice, instructions and other
+      // clinical fields. Retain the safety guard only for templates whose saved
+      // medicine list should not suddenly become empty during editing.
+      if (!medicines.length && active.originalMedicineCount > 0) {
+        throw new Error('The original saved medicines are missing. The template was not overwritten.');
       }
       const list = library();
       const index = list.findIndex(item => item && item.type === 'templates' && item.id === active.id);
@@ -121,9 +124,8 @@
       const savedRows = rows(item.medicines);
       const recordRows = rows(record && record.medicines);
       const treatment = recordRows.length >= savedRows.length ? recordRows : savedRows;
-      if (!treatment.length) {
-        throw new Error('No saved medicines are available to restore. The template was not altered.');
-      }
+      // Empty medicine lists are valid: restore saved instructions/advice and
+      // other fields without requiring a drug entry.
       const approved = await window.mediScriptConfirm(
         'Edit saved template?',
         'Open this template in the editable Prescription Portal? Any unsaved work currently in the prescription form will be replaced.',
@@ -176,6 +178,7 @@
         active = {
           id: item.id,
           fromPrescription: prescriptionOrigin(item),
+          originalMedicineCount: treatment.length,
           originalSave: window.saveFullPrescriptionTemplate,
           saveButton,
           originalHTML: saveButton.innerHTML,
