@@ -464,30 +464,30 @@ window.mediScriptSignOut=async function(){
 .account-signout:focus-visible{outline:3px solid #fff;outline-offset:2px}
 @media print{.account-toolbar{display:none!important}}
 </style>
-<style id="template-landscape-preview-fix">
-/* The template banner is a direct child of the two-column flex body.
-   Remove it from flex layout so it cannot consume the A4 preview column. */
-#templateWorkspaceBanner{
-  position:fixed!important;
-  top:auto!important;
-  right:16px!important;
-  bottom:16px!important;
+
+<style id="template-workspace-layout">
+/* Banner belongs to the form scroll column, not the body flex row. */
+.form-panel > #templateWorkspaceBanner {
+  position:sticky!important;
+  top:0!important;
   left:auto!important;
-  width:min(420px,calc(100vw - 32px))!important;
-  max-width:calc(100vw - 32px)!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:100%!important;
+  max-width:100%!important;
   height:auto!important;
   min-height:0!important;
   flex:none!important;
-  z-index:1005!important;
-  border-radius:14px;
+  z-index:10;
+  border-radius:0 0 12px 12px;
   padding:10px 12px!important;
-  gap:10px;
-  box-shadow:0 8px 28px rgba(0,0,0,.22);
+  box-sizing:border-box;
+  flex-wrap:wrap;
 }
-#templateWorkspaceBanner span{font-size:11px;line-height:1.35}
-#templateWorkspaceBanner button{flex-shrink:0}
-@media(max-width:620px){
- #templateWorkspaceBanner{bottom:8px!important;right:8px!important;width:calc(100vw - 16px)!important;flex-wrap:wrap}
+#previewPanel{min-width:0}
+@media screen and (min-width:901px) and (orientation:landscape) {
+ body > .form-panel{flex:0 0 50%;width:50%;min-width:0}
+ body > #previewPanel{flex:1 1 50%;width:50%;min-width:0}
 }
 </style>
 <style id="workspace-navigation-styles">
@@ -1651,6 +1651,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 </dialog>
 <!-- ================= LEFT PANEL: INPUTS ================= -->
 <div class="form-panel">
+<div id="templateWorkspaceBanner" class="template-workspace-banner"><span>▤ TEMPLATE WORKSPACE · Complete prescription saved only to Templates & Favorites</span><button type="button" id="templateWorkspaceExit">Exit template mode</button></div>
 
   <div class="panel-header">
     <h2>MediScript Pro</h2>
@@ -2025,7 +2026,6 @@ window.mediScriptConfirm=(title,description,accept='Continue',danger=false,cance
  dialog.showModal();no.focus();
 });
 </script>
-<div id="templateWorkspaceBanner" class="template-workspace-banner"><span>▤ TEMPLATE WORKSPACE · Complete prescription saved only to Templates & Favorites</span><button type="button" id="templateWorkspaceExit">Exit template mode</button></div>
 <script>
 window.mediscriptTemplateMode=true;
 window.mediscriptTemplateName='New prescription template';
