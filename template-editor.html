@@ -1493,7 +1493,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    if(!persist()){items=old;status.textContent='Template not saved. Browser storage may be full or unavailable. Please do not discard your prescription.';window.mediScriptConfirm?.('Template not saved','Browser storage is full or unavailable. Your editor remains intact. Please free storage and try again.','OK',false,'Close');return false;}
    window.dispatchEvent(new Event('mediscript-template-saved'));
    window.setMediScriptTemplateMode?.(false);
-   if(window.MEDISCRIPT_TEMPLATE_ONLY){window.location.assign('./index.html?openTemplates=1');}else window.openMedicineLibrary?.();
+   if(window.MEDISCRIPT_TEMPLATE_ONLY){setTimeout(()=>window.location.assign('./index.html?openTemplates=1'),1400);}else window.openMedicineLibrary?.();
    return true;
   }catch(error){console.error('Template save failed:',error);status.textContent='Template could not be saved: '+String(error?.message||'Unexpected error');window.mediScriptConfirm?.('Template not saved','The template could not be saved. Your prescription editor is still available. Please retry after checking browser storage.','OK',false,'Close');return false;}
  };
