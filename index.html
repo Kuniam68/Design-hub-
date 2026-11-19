@@ -3202,7 +3202,7 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
 // Load the prescription-origin Edit Details controller only in that explicit edit mode.
 if (new URLSearchParams(location.search).has('editPrescriptionTemplate')) {
   const controller = document.createElement('script');
-  controller.src = './prescription-template-edit.js?v=1';
+  controller.src = './prescription-template-edit.js?v=2';
   document.body.appendChild(controller);
 }
 </script>
