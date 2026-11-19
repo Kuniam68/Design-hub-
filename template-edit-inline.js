@@ -109,8 +109,7 @@
     const printButton = document.querySelector('button[onclick="printPrescription()"]');
     const banner = document.getElementById('templateWorkspaceBanner');
     if (!saveButton || typeof window.restoreMediScriptPrescription !== 'function' ||
-        typeof window.getMediScriptPrescriptionSnapshot !== 'function' ||
-        typeof window.startNewPrescription !== 'function') {
+        typeof window.getMediScriptPrescriptionSnapshot !== 'function') {
       error('The prescription editor is not ready. Your template has not been changed.');
       return false;
     }
@@ -134,9 +133,31 @@
       if (active) endEdit();
       const priorPrescription = window.getMediScriptPrescriptionSnapshot();
       try {
-        // Exactly the existing New Prescription workspace, without navigation or refresh.
-        window.startNewPrescription(true);
-        const editRecord = record ? copy(record) : window.getMediScriptPrescriptionSnapshot();
+        // Prepare the same editable Prescription Portal without invoking the
+        // New Prescription global wrapper (which recursively calls itself).
+        // Keep the doctor's profile and the current unsaved draft safe until
+        // the saved template has been verified and restored.
+        const formControls = Array.from(document.querySelectorAll(
+          '.form-panel input,.form-panel select,.form-panel textarea'
+        )).filter(el => !el.closest('#doctor-profile-section') &&
+          !el.closest('#med-container') && el.type !== 'hidden' && el.type !== 'file');
+        if (!formControls.length) throw new Error('Prescription fields are not available.');
+        const blankFields = {};
+        formControls.forEach((el, index) => {
+          if (el.type === 'checkbox' || el.type === 'radio') {
+            blankFields[String(index)] = Boolean(el.defaultChecked);
+          } else if (el.tagName === 'SELECT') {
+            const option = Array.from(el.options).find(opt => opt.defaultSelected) || el.options[0];
+            blankFields[String(index)] = option ? option.value : '';
+          } else {
+            blankFields[String(index)] = el.defaultValue || '';
+          }
+        });
+        const editRecord = record ? copy(record) : copy(priorPrescription);
+        // A saved full record supplies patient details; older templates use
+        // the empty defaults of the normal New Prescription screen.
+        editRecord.fields = { ...blankFields, ...(record ? editRecord.fields : {}) };
+        if (!record) editRecord.investigations = [];
         editRecord.medicines = treatment.map(values => ({ values: values.slice() }));
         window.restoreMediScriptPrescription(editRecord);
         const expected = treatment.map(values => String(values[1]).trim());
