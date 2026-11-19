@@ -862,7 +862,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <button type="button" class="workspace-nav-item" data-workspace-action="profile"><span>👤</span>My Profile</button>
   <button type="button" class="workspace-nav-item" data-workspace-action="locations"><span>🏥</span>Hospitals &amp; Chambers</button>
   <button type="button" class="workspace-nav-item" data-workspace-action="history"><span>🕘</span>Prescription History</button>
-  <button type="button" class="workspace-nav-item planned" data-workspace-action="patients"><span>👥</span>Patient Directory <small>Planned</small></button>
+  <button type="button" class="workspace-nav-item" data-workspace-action="patients"><span>👥</span>Patient Directory</button>
   <button type="button" class="workspace-nav-item planned" data-workspace-action="templates"><span>📋</span>Templates &amp; Medicine Favorites <small>Planned</small></button>
   <button type="button" class="workspace-nav-item planned" data-workspace-action="settings"><span>⚙️</span>Settings &amp; Appearance <small>Planned</small></button>
   <div class="workspace-nav-separator"></div>
@@ -880,6 +880,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  if(action==='profile'){toggle(false);window.openMyProfile();return;}
  if(action==='locations'){toggle(false);window.openPracticeLocations();return;}
  if(action==='history'){toggle(false);window.openPrescriptionHistory();return;}
+ if(action==='patients'){toggle(false);window.openPatientDirectory();return;}
  if(action==='prescription'){toggle(false);window.startNewPrescription();return;}
  notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
  });
@@ -1221,6 +1222,112 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   </div>
  </div>
 </dialog>
+<style id="patient-directory-styles">
+.patient-directory{border:0;padding:0;margin:auto;width:min(960px,calc(100vw - 28px));max-height:min(90dvh,1000px);border-radius:26px;background:#f6faf8;color:#163f37;box-shadow:0 25px 95px #092c385e;overflow:auto;font-family:inherit}
+.patient-directory::backdrop{background:#062b35a9;backdrop-filter:blur(6px)}
+.pd-hero{position:relative;padding:35px 35px 30px;background:linear-gradient(120deg,#113e4c,#087c70);color:white}
+.pd-kicker{font-size:11px;font-weight:800;letter-spacing:2px;color:#a4e8d8}
+.pd-hero h2{font-size:32px;letter-spacing:-1px;margin:12px 0 8px;color:white}
+.pd-hero p{font-size:14px;color:#c6e5dd;margin:0;max-width:600px;line-height:1.6}
+.pd-close{position:absolute;top:18px;right:20px;width:43px;height:43px;border:1px solid #ffffff60;border-radius:13px;background:#ffffff21;color:white;font-size:27px;cursor:pointer}
+.pd-stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.pd-stat{padding:12px 17px;border:1px solid #ffffff30;background:#ffffff17;border-radius:14px;min-width:125px}
+.pd-stat strong{display:block;font-size:23px;line-height:1.2;color:white}
+.pd-stat small{font-size:11px;color:#d0ebe3}
+.pd-body{padding:25px 32px 32px}
+.pd-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.pd-search{display:flex;align-items:center;gap:10px;flex:1;min-width:180px;background:white;border:1px solid #cfe5da;border-radius:15px;padding:0 15px;height:50px;color:#168674}
+.pd-search:focus-within{border-color:#0a8d7b;box-shadow:0 0 0 3px #0a8d7b19}
+.pd-search input{min-width:0;flex:1;width:100%;height:45px;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;font:inherit;font-size:13px;color:#193e36}
+.pd-sort{height:50px;border:1px solid #cfe5da;border-radius:13px;background:white;color:#22594d;padding:0 12px;font:600 12px inherit}
+.pd-results{font-size:12px;color:#68887d;margin-bottom:14px}
+.pd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.pd-card{background:white;border:1px solid #e0ece6;border-radius:19px;padding:19px;box-shadow:0 6px 23px #0b4d3d0a}
+.pd-card-top{display:flex;align-items:center;gap:12px}
+.pd-avatar{display:grid;place-items:center;flex:none;width:49px;height:49px;border-radius:15px;background:#e5f6ee;color:#087f70;font-weight:800;font-size:16px}
+.pd-person{min-width:0;flex:1}
+.pd-person strong{display:block;font-size:16px;overflow-wrap:anywhere}
+.pd-person small{display:block;font-size:12px;color:#7c978c;margin-top:3px}
+.pd-card-details{display:grid;gap:7px;margin:17px 0;padding:13px;background:#f6faf8;border-radius:12px;font-size:12px;color:#476b60}
+.pd-card-details span{overflow-wrap:anywhere}
+.pd-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pd-pill{border-radius:30px;background:#e6f6ee;color:#177a63;padding:7px 10px;font-size:11px;font-weight:800}
+.pd-view{border:0;border-radius:11px;padding:11px 13px;background:#087c70;color:white;font-size:12px;font-weight:700;cursor:pointer}
+.pd-empty{grid-column:1/-1;text-align:center;padding:55px 18px;border:1px dashed #bbdcd0;border-radius:18px;background:white;color:#54786c;line-height:1.7}
+.pd-detail{margin-bottom:17px;background:#e7f5ef;border:1px solid #cbe7da;border-radius:16px;padding:18px}
+.pd-detail[hidden]{display:none}
+.pd-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pd-detail-head strong{font-size:18px}
+.pd-back{border:1px solid #b9d8ca;background:white;border-radius:10px;padding:9px 12px;color:#236b5c;cursor:pointer}
+.pd-detail p{font-size:12px;color:#5b7a70}
+.pd-visit{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #c8e4d7}
+.pd-visit div{min-width:0}
+.pd-visit strong{display:block;font-size:13px}
+.pd-visit small{font-size:11px;color:#68887d}
+.pd-visit button{border:1px solid #bad7ca;border-radius:9px;background:white;color:#0a7668;padding:9px 12px;font-weight:700;font-size:11px;cursor:pointer}
+@media(max-width:640px){.patient-directory{width:calc(100vw - 16px);border-radius:19px}.pd-hero{padding:30px 19px 24px}.pd-hero h2{font-size:26px}.pd-body{padding:17px 14px 25px}.pd-grid{grid-template-columns:1fr}.pd-sort{width:100%}.pd-card{padding:15px}}
+</style>
+<dialog class="patient-directory" id="patientDirectoryDialog" aria-labelledby="pdTitle">
+ <header class="pd-hero"><button type="button" class="pd-close" id="pdClose" aria-label="Close Patient Directory">×</button><div class="pd-kicker">MEDISCRIPT PRO · PATIENT CARE</div><h2 id="pdTitle">Patient Directory</h2><p>A thoughtful home for your patients and their prescription journeys. Find the right record, faster.</p><div class="pd-stats"><div class="pd-stat"><strong id="pdPatientCount">—</strong><small>Patients</small></div><div class="pd-stat"><strong id="pdRxCount">—</strong><small>Prescriptions</small></div><div class="pd-stat"><strong id="pdSavedCount">—</strong><small>Retained records</small></div></div></header>
+ <main class="pd-body"><div class="pd-toolbar"><label class="pd-search"><span aria-hidden="true">⌕</span><input type="search" id="pdSearch" placeholder="Search patient name, phone, diagnosis…" aria-label="Search patients"></label><select class="pd-sort" id="pdSort" aria-label="Sort patients"><option value="recent">Most recent</option><option value="name">Name A–Z</option><option value="visits">Most prescriptions</option></select></div><div id="pdStatus" class="pd-results" role="status">Loading patient directory…</div><section class="pd-detail" id="pdDetail" hidden aria-label="Patient details"></section><div class="pd-grid" id="pdGrid"></div></main>
+</dialog>
+<script>
+(function(){
+ const dialog=document.getElementById('patientDirectoryDialog'),grid=document.getElementById('pdGrid'),status=document.getElementById('pdStatus'),search=document.getElementById('pdSearch'),sort=document.getElementById('pdSort'),detail=document.getElementById('pdDetail');
+ let patients=[],selected=null,loading=false;
+ const el=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n;};
+ const stamp=r=>{const t=r.createdAt;return typeof t?.toMillis==='function'?t.toMillis():typeof t?.seconds==='number'?t.seconds*1000:0;};
+ const date=t=>t?new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'Date unavailable';
+ const identity=r=>[String(r.patientName||'').trim().toLocaleLowerCase(),String(r.patientPhone||'').trim()||'no-phone',String(r.patientAge||'').trim()||'no-age'].join('|');
+ function collect(records){
+  const map=new Map();
+  for(const r of records){
+   if(!r.patientName)continue;
+   const key=identity(r);
+   if(!map.has(key))map.set(key,{key,name:r.patientName,phone:r.patientPhone||'',age:r.patientAge||'',records:[],last:0});
+   const p=map.get(key);p.records.push(r);p.last=Math.max(p.last,stamp(r));
+  }
+  return Array.from(map.values());
+ }
+ function showDetail(p){
+  selected=p.key;detail.hidden=false;detail.replaceChildren();
+  const head=el('div','pd-detail-head'),title=el('strong','',p.name),back=el('button','pd-back','← Back to directory');back.type='button';back.onclick=()=>{selected=null;detail.hidden=true;render();};
+  head.append(title,back);detail.append(head,el('p','',[p.age?'Age '+p.age:'Age not recorded',p.phone?'Phone '+p.phone:'No phone recorded'].join(' · ')));
+  for(const r of p.records.slice().sort((a,b)=>stamp(b)-stamp(a))){
+   const visit=el('div','pd-visit'),info=el('div'),action=el('button','','View in History');action.type='button';
+   info.append(el('strong','',r.diagnosis||'Prescription record'),el('small','',date(stamp(r))+(r.saved||r.favorite?' · Saved':' · Temporary')));
+   action.onclick=()=>{dialog.close();window.openPrescriptionHistory?.();};
+   visit.append(info,action);detail.append(visit);
+  }
+  detail.scrollIntoView({block:'nearest',behavior:'smooth'});
+ }
+ function render(){
+  grid.replaceChildren();if(selected){const p=patients.find(p=>p.key===selected);if(p)showDetail(p);else{selected=null;detail.hidden=true;}}
+  const term=search.value.trim().toLocaleLowerCase();
+  let shown=patients.filter(p=>[p.name,p.phone,p.age,...p.records.map(r=>r.diagnosis||'')].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
+  if(sort.value==='name')shown.sort((a,b)=>a.name.localeCompare(b.name));else if(sort.value==='visits')shown.sort((a,b)=>b.records.length-a.records.length||b.last-a.last);else shown.sort((a,b)=>b.last-a.last);
+  status.textContent=shown.length+' of '+patients.length+' patients · Grouped by name, phone and age. Confirm identity before using a record.';
+  if(!shown.length){grid.append(el('div','pd-empty',patients.length?'No patients match your search. Try another name or phone number.':'No patients found yet. Download or print a prescription to start building your directory.'));return;}
+  for(const p of shown){
+   const card=el('article','pd-card'),top=el('div','pd-card-top'),avatar=el('div','pd-avatar',p.name.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()),person=el('div','pd-person'),details=el('div','pd-card-details'),bottom=el('div','pd-card-bottom'),button=el('button','pd-view','View patient →');
+   person.append(el('strong','',p.name),el('small','',p.age?'Age '+p.age:'Age not recorded'));top.append(avatar,person);
+   details.append(el('span','',p.phone?'☎ '+p.phone:'☎ Phone not recorded'),el('span','','Last record · '+date(p.last)),el('span','','Latest diagnosis · '+(p.records.slice().sort((a,b)=>stamp(b)-stamp(a))[0]?.diagnosis||'Not recorded')));
+   button.type='button';button.onclick=()=>showDetail(p);
+   bottom.append(el('span','pd-pill',p.records.length+' '+(p.records.length===1?'prescription':'prescriptions')),button);card.append(top,details,bottom);grid.append(card);
+  }
+ }
+ async function open(){
+  dialog.showModal();selected=null;detail.hidden=true;search.value='';sort.value='recent';grid.replaceChildren();status.textContent='Loading your private patient records…';
+  if(loading)return;loading=true;
+  try{const records=await window.historyCloud.list();patients=collect(records);document.getElementById('pdPatientCount').textContent=patients.length;document.getElementById('pdRxCount').textContent=records.length;document.getElementById('pdSavedCount').textContent=records.filter(r=>r.saved||r.favorite).length;render();}
+  catch(err){grid.replaceChildren(el('div','pd-empty','Unable to load patients. Check your connection and Firebase access, then reopen the directory.'));status.textContent='Patient directory unavailable';console.error('Patient directory error',err);}
+  finally{loading=false;}
+ }
+ window.openPatientDirectory=open;
+ document.getElementById('pdClose').onclick=()=>dialog.close();
+ search.addEventListener('input',render);sort.addEventListener('change',render);
+})();
+</script>
 <dialog class="history-dialog" id="historyDialog" aria-labelledby="historyTitle">
  <header class="history-header">
   <button type="button" class="history-x" id="historyClose" aria-label="Close prescription history">×</button>
