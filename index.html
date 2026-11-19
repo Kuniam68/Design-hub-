@@ -1281,6 +1281,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 
 .pd-results{font-size:12px;color:#68887d;margin-bottom:14px}
 .pd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+/* Center the patient-loading card across both grid columns, including iPad and phone. */
+.pd-grid > .history-loading{grid-column:1/-1;width:100%;max-width:540px;justify-self:center;box-sizing:border-box}
+
 .pd-card{background:white;border:1px solid #e0ece6;border-radius:19px;padding:19px;box-shadow:0 6px 23px #0b4d3d0a}
 .pd-card-top{display:flex;align-items:center;gap:12px}
 .pd-avatar{display:grid;place-items:center;flex:none;width:49px;height:49px;border-radius:15px;background:#e5f6ee;color:#087f70;font-weight:800;font-size:16px}
@@ -1657,7 +1660,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <div class="section-card" id="doctor-profile-section">
     <div class="section-title">
       Doctor & Chamber Profile
-      <button class="btn btn-sm" id="profileSaveButton" onclick="saveProfile()">💾 Save My Profile</button>
+      
     </div>
     <div class="row">
       <div class="form-group"><label>Doctor Name</label><input type="text" id="dName" placeholder="Dr. Name" oninput="updatePreview()"></div>
