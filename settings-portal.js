@@ -521,7 +521,7 @@ function msEnsureCss(){
     if(existing){resolve();return;}
     const link=document.createElement('link');
     link.id='mssSettingsStyles';link.rel='stylesheet';
-    link.href=new URL('./settings-portal.css?v=7',import.meta.url).href;
+    link.href=new URL('./settings-portal.css?v=8',import.meta.url).href;
     link.onload=resolve;link.onerror=resolve;
     document.head.appendChild(link);
     setTimeout(resolve,2000);
