@@ -4,7 +4,7 @@
 const MS_DEFAULTS=Object.freeze({
   theme:'light',accent:'emerald',customAccent:'#6958bf',nightStart:'19',nightEnd:'07',density:'comfortable',scale:'standard',
   typeface:'modern',lineSpacing:'comfortable',corners:'rounded',surface:'layered',
-  contrast:false,reduceMotion:false,boldLabels:false,focusRing:true,
+  contrast:false,reduceMotion:false,boldLabels:false,focusRing:true,readableLinks:false,underlineLinks:false,
   rememberSection:true,hotkeys:true,largeTargets:false,shortDescriptions:false
 });
 const MS_ACCENTS={
@@ -29,11 +29,11 @@ function msSanitize(raw){
   const allowed={
     theme:['light','dark','dim','system','scheduled'],accent:[...Object.keys(MS_ACCENTS),'custom'],nightStart:['18','19','20','21','22'],nightEnd:['05','06','07','08','09'],
     density:['comfortable','compact','spacious'],scale:['small','standard','large'],
-    typeface:['modern','serif'],lineSpacing:['tight','comfortable','relaxed'],
-    corners:['rounded','square'],surface:['layered','flat']
+    typeface:['modern','serif','poppins','arial','verdana','trebuchet','georgia','monospace','custom'],lineSpacing:['tight','comfortable','relaxed'],
+    corners:['rounded','square','soft','pill'],surface:['layered','flat']
   };
   Object.keys(allowed).forEach(key=>{if(allowed[key].includes(s[key]))next[key]=s[key];});
-  ['contrast','reduceMotion','boldLabels','focusRing','rememberSection','hotkeys','largeTargets','shortDescriptions'].forEach(key=>{
+  ['contrast','reduceMotion','boldLabels','focusRing','readableLinks','underlineLinks','rememberSection','hotkeys','largeTargets','shortDescriptions'].forEach(key=>{
     if(typeof s[key]==='boolean')next[key]=s[key];
   });
   if(typeof s.customAccent==='string'&&/^#[0-9a-fA-F]{6}$/.test(s.customAccent))next.customAccent=s.customAccent.toLowerCase();
@@ -83,6 +83,23 @@ function msAccent(){
   const hex=msPrefs.customAccent,n=parseInt(hex.slice(1),16);
   return {name:'Custom',hex,rgb:[n>>16&255,n>>8&255,n&255].join(',')};
 }
+function msFontFamily(){
+  const fonts={modern:'system-ui, sans-serif',serif:'Georgia, serif',poppins:'Poppins, system-ui, sans-serif',arial:'Arial, sans-serif',verdana:'Verdana, sans-serif',trebuchet:'Trebuchet MS, sans-serif',georgia:'Georgia, serif',monospace:'ui-monospace, SFMono-Regular, Menlo, monospace'};
+  return msPrefs.typeface==='custom'&&msFontUrl?'MediScriptCustomFont, system-ui, sans-serif':fonts[msPrefs.typeface]||fonts.modern;
+}
+let msFontUrl='';
+async function msLoadFont(file){
+  if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['woff','woff2','ttf','otf'].includes(ext)||file.size>3*1024*1024){msToast('Use a WOFF, WOFF2, TTF or OTF font under 3 MB');return;}
+  const next=URL.createObjectURL(file);
+  try{
+    const face=new FontFace('MediScriptCustomFont',`url("${next}")`);
+    await face.load();document.fonts.add(face);
+    if(msFontUrl)URL.revokeObjectURL(msFontUrl);
+    msFontUrl=next;msChange('typeface','custom');msToast('Custom font applied for this session');
+  }catch(e){URL.revokeObjectURL(next);msToast('Cannot read that font file');}
+}
 function msRender(){
   if(!msDialog)return;
   const accent=msAccent();
@@ -93,9 +110,16 @@ function msRender(){
   msDialog.dataset.shortDescriptions=msPrefs.shortDescriptions?'true':'false';
   // The application shell changes appearance; its six clinical editors do not.
   document.documentElement.dataset.msShellTheme=mode;
+  document.documentElement.dataset.msUiContrast=msPrefs.contrast?'high':'normal';
+  document.documentElement.dataset.msUiCorners=msPrefs.corners;
+  document.documentElement.dataset.msUiLinks=msPrefs.underlineLinks?'underlined':'normal';
+  document.documentElement.dataset.msUiLegibility=msPrefs.readableLinks?'enhanced':'normal';
+  document.documentElement.style.setProperty('--ms-app-accent',accent.hex);
+  document.documentElement.style.setProperty('--ms-app-font',msFontFamily());
   msDialog.dataset.density=msPrefs.density;
   msDialog.dataset.scale=msPrefs.scale;
   msDialog.dataset.font=msPrefs.typeface;
+  msDialog.style.setProperty('--ms-app-font',msFontFamily());
   msDialog.dataset.spacing=msPrefs.lineSpacing;
   msDialog.dataset.corners=msPrefs.corners;
   msDialog.dataset.surface=msPrefs.surface;
@@ -113,6 +137,8 @@ function msRender(){
     const key=button.dataset.msToggle;
     button.setAttribute('aria-checked',String(Boolean(msPrefs[key])));
   });
+  const customLabel=msDialog.querySelector('[data-ms-font-status]');
+  if(customLabel)customLabel.textContent=msPrefs.typeface==='custom'?(msFontUrl?'Custom font active for this session':'Upload a font to activate it'):'Choose a preset typeface or upload a font';
   const label=msPrefs.theme==='scheduled'?'Timed '+(dark?'night':'day'):msPrefs.theme==='dim'?'Soft dark':dark?'Dark':'Light';
   msDialog.querySelector('[data-ms-mode-label]').textContent=label+' · '+accent.name;
   msDialog.querySelector('[data-ms-summary]').textContent=
@@ -197,18 +223,21 @@ function msMarkup(){
     '</div></div>';
   const typography=msHeader('Readable by design.','Adjust the actual Settings interface, not a sample box.')+
     msGroup('Reading size','scale',[['small','Small'],['standard','Standard'],['large','Large']])+
-    msGroup('Typeface','typeface',[['modern','Modern sans'],['serif','Editorial serif']])+
+    msGroup('Typeface','typeface',[['modern','Modern'],['poppins','Poppins'],['arial','Arial'],['verdana','Verdana'],['trebuchet','Trebuchet'],['serif','Editorial'],['georgia','Georgia'],['monospace','Monospace']])+
+    '<div class="mss-font-import"><div><strong>Upload your own font</strong><small data-ms-font-status>Choose a preset typeface or upload a font</small></div><button type="button" class="mss-data-action" data-ms-font-upload>Choose font</button><input id="msFontUpload" type="file" accept=".woff,.woff2,.ttf,.otf,font/woff,font/woff2" hidden></div>'+
     msGroup('Line spacing','lineSpacing',[['tight','Tight'],['comfortable','Comfortable'],['relaxed','Relaxed']]);
   const layout=msHeader('Your preferred rhythm.','Refine spacing and surfaces in the Settings studio.')+
     msGroup('Interface density','density',[['compact','Compact'],['comfortable','Comfortable'],['spacious','Spacious']])+
-    msGroup('Corners','corners',[['rounded','Rounded'],['square','Crisp']])+
+    msGroup('Corners','corners',[['rounded','Rounded'],['soft','Soft'],['square','Crisp'],['pill','Pill-shaped']])+
     msGroup('Surface depth','surface',[['layered','Soft layers'],['flat','Minimal']]);
   const accessibility=msHeader('Accessible by choice.','Changes take effect immediately in every Settings section.')+
     msToggle('High contrast','Stronger outlines and clearer labels.','contrast')+
     msToggle('Reduce motion','Remove animations and transitions.','reduceMotion')+
     msToggle('Stronger labels','Make descriptions and control labels easier to read.','boldLabels')+
     msToggle('Prominent keyboard focus','Highlight the currently focused control.','focusRing')+
-    msToggle('Larger touch targets','Make all Settings controls easier to tap on tablets and phones.','largeTargets');
+    msToggle('Larger touch targets','Make controls easier to tap on tablets and phones.','largeTargets')+
+    msToggle('Underline links','Identify links without relying on color alone.','underlineLinks')+
+    msToggle('Enhanced text legibility','Increase control label clarity across the workspace.','readableLinks');
   const preferences=msHeader('Useful personal controls.','These preferences are functional and never touch medical records.')+
     msToggle('Remember last Settings section','Reopen the section where you left off.','rememberSection')+
     msToggle('Keyboard section shortcuts','While Settings is open, use Alt+1 through Alt+6.','hotkeys')+
@@ -217,12 +246,12 @@ function msMarkup(){
     '<button type="button" class="mss-data-action mss-inline-action" data-ms-copy><strong>Copy settings summary</strong><span aria-hidden="true">⧉</span></button></div>';
   const backup=msHeader('Keep your setup.','Back up only appearance preferences. Prescriptions, templates, patient history and doctor details are excluded.')+
     '<div class="mss-backup-actions">'+
-      '<button type="button" class="mss-data-action" data-ms-export><strong>Export preferences</strong><small>Save a JSON backup on your device</small></button>'+
-      '<button type="button" class="mss-data-action" data-ms-import><strong>Import preferences</strong><small>Restore an exported JSON file</small></button>'+
+      '<button type="button" class="mss-data-action" data-ms-export><strong>Export preferences</strong><small>JSON saves editable settings so you can restore them later</small></button>'+
+      '<button type="button" class="mss-data-action" data-ms-import><strong>Import preferences</strong><small>Choose a saved JSON file and reapply your settings</small></button>'+
       '<button type="button" class="mss-data-action" data-ms-reset><strong>Restore defaults</strong><small>Reset appearance settings only</small></button>'+
     '</div>'+
     '<input id="msSettingsImport" type="file" accept=".json,application/json" hidden aria-label="Import appearance preferences">'+
-    '<p class="mss-hint mss-backup-note">Saved locally for this browser and doctor account. No clinical data is included.</p>';
+    '<p class="mss-hint mss-backup-note">JSON is machine-readable and can restore settings. A PDF is readable, but cannot automatically restore preferences. No clinical data is included.</p>';
   const panels={appearance,typography,layout,accessibility,preferences,backup};
   return [
     '<div class="mss-layout"><aside class="mss-sidebar">',
@@ -285,6 +314,7 @@ function msHandleClick(event){
     msChange(key,!msPrefs[key]);return;
   }
   if(button.hasAttribute('data-ms-preset')){msPreset(button.dataset.msPreset);return;}
+  if(button.hasAttribute('data-ms-font-upload')){msDialog.querySelector('#msFontUpload').click();return;}
   if(button.hasAttribute('data-ms-export')){void msExport();return;}
   if(button.hasAttribute('data-ms-import')){msDialog.querySelector('#msSettingsImport').click();return;}
   if(button.hasAttribute('data-ms-copy')){void msCopy();return;}
@@ -308,6 +338,7 @@ function msCreate(){
   };
   msDialog.addEventListener('input',onColor);
   msDialog.addEventListener('change',onColor);
+  msDialog.querySelector('#msFontUpload').addEventListener('change',async event=>{await msLoadFont(event.target.files?.[0]);event.target.value='';});
   msDialog.querySelector('#msSettingsImport').addEventListener('change',async event=>{
     await msImport(event.target.files?.[0]);event.target.value='';
   });
@@ -339,7 +370,7 @@ function msEnsureCss(){
     if(existing){resolve();return;}
     const link=document.createElement('link');
     link.id='mssSettingsStyles';link.rel='stylesheet';
-    link.href=new URL('./settings-portal.css?v=5',import.meta.url).href;
+    link.href=new URL('./settings-portal.css?v=6',import.meta.url).href;
     link.onload=resolve;link.onerror=resolve;
     document.head.appendChild(link);
     setTimeout(resolve,2000);
