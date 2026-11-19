@@ -818,7 +818,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .history-record-diagnosis{font-size:12px;color:#3d655c;margin:12px 0 0;overflow-wrap:anywhere}
 .history-record-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid #edf3ef}
 .history-record-buttons button{border:1px solid #d8e7df;background:#f4f9f6;border-radius:9px;padding:9px 12px;color:#226358;font:700 11px inherit;cursor:pointer}
-.history-record-buttons .history-open{background:#0c796d;color:#fff;border-color:#0c796d}
+.history-record-buttons .history-open{background:#f4f9f6;color:#226358;border-color:#d8e7df;transition:background .18s,color .18s,box-shadow .18s,transform .18s}
+.history-record-buttons .history-open:hover,.history-record-buttons .history-open:focus-visible,.history-record-buttons .history-open:active{background:#0c796d;color:#fff;border-color:#0c796d;box-shadow:0 6px 16px #087d7033;transform:translateY(-1px)}
 .history-record-buttons .history-delete{color:#af443c;background:#fff4f1;border-color:#f3ded9}
 .history-empty{padding:40px 20px;border:1px dashed #b8d6ca;border-radius:17px;text-align:center;background:#fff}
 .history-empty span{display:block;font-size:37px;margin-bottom:10px}
@@ -1299,6 +1300,35 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .ml-tab{border:1px solid #d0e7dd;border-radius:13px;padding:12px 17px;background:white;color:#356b5d;font-size:12px;font-weight:800;cursor:pointer}
 .ml-tab.on{background:#087d70;border-color:#087d70;color:white;box-shadow:0 5px 16px #087d7030}
 .ml-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:15px}
+.ml-search-wrap{flex:1;min-width:210px;position:relative}
+.ml-search-label{display:block;font-size:12px;font-weight:800;color:#315e53;margin-bottom:8px}
+.ml-search-icon{display:grid;place-items:center;width:37px;height:37px;flex:none;border-radius:11px;background:#e5f5ee;color:#087d70;font-size:19px}
+.ml-search:focus-within{border-color:#0d9885;box-shadow:0 0 0 3px #0d98851c,0 8px 24px #0a756414}
+.ml-search input:focus{outline:0!important;border:0!important;box-shadow:none!important}
+.ml-clear{border:0;background:#eaf5f0;color:#356c5f;border-radius:9px;width:29px;height:29px;cursor:pointer;flex:none}
+.ml-clear[hidden],.ml-guide[hidden]{display:none!important}
+.ml-guide{position:absolute;z-index:15;left:0;right:0;top:100%;margin-top:7px;background:white;border:1px solid #cbe4d9;border-radius:14px;padding:7px;box-shadow:0 16px 35px #123f3329;max-height:210px;overflow:auto}
+.ml-guide button{display:block;width:100%;text-align:left;border:0;border-radius:9px;padding:11px 13px;background:white;color:#205d50;font:inherit;font-size:13px;cursor:pointer}
+.ml-guide button:hover,.ml-guide button:focus-visible{background:#e8f7f0;outline:0}
+.ml-library-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 17px;flex-wrap:wrap}
+.ml-library-count{color:#64877a;font-size:12px;font-weight:700}
+.ml-sort{display:flex;align-items:center;gap:8px;color:#3a7164;font-size:12px;font-weight:800}
+.ml-sort select{border:1px solid #d0e6db;background:white;border-radius:11px;padding:9px 12px;color:#21594d;font:inherit;font-size:12px;max-width:185px}
+.ml-template-confirm{border:0;padding:0;margin:auto;width:min(470px,calc(100vw - 30px));max-height:90dvh;overflow:auto;border-radius:25px;background:white;color:#173f36;box-shadow:0 25px 90px #092d385a;font-family:inherit;animation:historyEnter .22s ease-out}
+.ml-template-confirm::backdrop{background:#092d39ad;backdrop-filter:blur(6px)}
+.ml-template-confirm-inner{padding:29px}
+.ml-template-confirm-symbol{width:65px;height:65px;border-radius:19px;display:grid;place-items:center;background:#e5f5ed;color:#07806f;font-size:30px;margin:0 auto 15px;animation:historyIconArrive .4s ease-out}
+.ml-template-confirm h3{text-align:center;color:#19483c;font-size:23px;margin:0 0 9px}
+.ml-template-confirm p{text-align:center;font-size:13px;line-height:1.6;color:#6b887d;margin:0 0 21px}
+.ml-template-confirm label{display:block;font-size:12px;font-weight:800;color:#326457}
+.ml-template-confirm input{display:block;box-sizing:border-box;width:100%;margin-top:8px;border:1px solid #cce3d8;border-radius:13px;padding:14px;font:inherit;font-size:15px;background:#fbfefd;color:#173f36}
+.ml-template-confirm input:focus{outline:2px solid #11a994;outline-offset:2px}
+.ml-template-confirm-actions{display:flex;gap:10px;margin-top:21px}
+.ml-template-confirm-actions button{flex:1;min-width:0;padding:13px 10px;border-radius:12px;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.ml-template-confirm-actions .ml-confirm-cancel{background:#f0f7f3;color:#356d5e;border:1px solid #d1e6db}
+.ml-template-confirm-actions .ml-confirm-save{background:#087d70;color:white;border:1px solid #087d70}
+@media(max-width:620px){.ml-template-confirm-inner{padding:23px 19px}.ml-sort{width:100%;justify-content:space-between}}
+
 .ml-search{display:flex;gap:9px;align-items:center;flex:1;min-width:170px;background:white;border:1px solid #d0e6dc;border-radius:14px;padding:0 14px;height:48px;color:#087d70}
 .ml-search input{flex:1;min-width:0;width:100%;height:42px;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;font:inherit;font-size:13px}
 .ml-primary,.ml-secondary,.ml-danger{border:0;border-radius:11px;padding:12px 15px;font-size:12px;font-weight:800;cursor:pointer}
@@ -1325,16 +1355,43 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  <header class="ml-head"><button type="button" class="ml-x" id="mlClose" aria-label="Close medicine library">×</button><div class="ml-kicker">MEDISCRIPT PRO · CLINICAL SHORTCUTS</div><h2 id="mlTitle">Templates &amp; Favorites</h2><p>Your personal prescribing collection. Keep trusted combinations and frequently used medicines within easy reach.</p><div class="ml-metrics"><div class="ml-metric"><strong id="mlTemplateCount">0</strong><small>Saved templates</small></div><div class="ml-metric"><strong id="mlFavoriteCount">0</strong><small>Medicine favorites</small></div></div></header>
  <div class="ml-body">
   <div class="ml-switch" role="group" aria-label="Library collection"><button class="ml-tab on" type="button" data-ml-tab="templates" aria-pressed="true">▤ Prescription Templates</button><button class="ml-tab" type="button" data-ml-tab="favorites" aria-pressed="false">☆ Medicine Favorites</button></div>
-  <div class="ml-tools"><label class="ml-search">⌕ <input id="mlSearch" type="search" placeholder="Search your collection…" aria-label="Search templates and medicines"></label><button type="button" class="ml-primary" id="mlCreate">＋ Create template</button></div>
+  <div class="ml-tools"><div class="ml-search-wrap"><label class="ml-search-label" for="mlSearch">Find a treatment template</label><div class="ml-search"><span class="ml-search-icon" aria-hidden="true">⌕</span><input id="mlSearch" type="search" autocomplete="off" placeholder="Search by disease, medicine or template name…" aria-label="Search templates and medicines" aria-expanded="false" aria-controls="mlGuide"><button type="button" class="ml-clear" id="mlClear" aria-label="Clear search" hidden>×</button></div><div id="mlGuide" class="ml-guide" role="listbox" hidden></div></div><button type="button" class="ml-primary" id="mlCreate">＋ Create template</button></div><div class="ml-library-bar"><span id="mlResultCount" class="ml-library-count" role="status"></span><label class="ml-sort">Sort by <select id="mlSort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="az">Name A–Z</option><option value="za">Name Z–A</option><option value="meds">Most medicines</option></select></label></div>
   <div class="ml-editor" id="mlEditor" hidden><h3 id="mlEditorTitle">Create template</h3><p id="mlEditorHint">Save a reusable medicine combination from your prescription editor.</p><label class="ml-field">Collection name<input id="mlName" maxlength="100" placeholder="e.g. My commonly used regimen"></label><label class="ml-field">Notes (optional)<textarea id="mlNotes" maxlength="300" placeholder="Personal reference notes — not patient details"></textarea></label><div class="ml-editor-actions"><button type="button" class="ml-primary" id="mlSave">Save to library</button><button type="button" class="ml-secondary" id="mlCancel">Cancel</button></div></div>
   <div class="ml-grid" id="mlGrid"></div><div class="ml-status" id="mlStatus" role="status"></div>
   <p class="ml-note">Personal shortcuts only. Stored on this browser/device, not synced to Firebase. Never store patient information in templates. Review each medicine, formulation, strength, dose, route, frequency and duration before use.</p>
  </div>
 </dialog>
+<dialog id="mlTemplateConfirm" class="ml-template-confirm" aria-labelledby="mlConfirmTitle">
+ <form method="dialog" id="mlTemplateConfirmForm" class="ml-template-confirm-inner">
+  <div class="ml-template-confirm-symbol" aria-hidden="true">▤</div>
+  <h3 id="mlConfirmTitle">Create treatment template</h3>
+  <p>Save the selected medicines and advice as a reusable treatment plan. No patient identity is included.</p>
+  <label for="mlConfirmName">Template name<input id="mlConfirmName" type="text" maxlength="100" required placeholder="e.g. Pneumonia — Adult"></label>
+  <div class="ml-template-confirm-actions"><button type="button" class="ml-confirm-cancel" id="mlConfirmCancel">Cancel</button><button type="submit" class="ml-confirm-save">Save template</button></div>
+ </form>
+</dialog>
 <script>
 (function(){
  const dialog=document.getElementById('medicineLibraryDialog'),grid=document.getElementById('mlGrid'),search=document.getElementById('mlSearch'),editor=document.getElementById('mlEditor'),create=document.getElementById('mlCreate'),status=document.getElementById('mlStatus');
  const tabs=Array.from(dialog.querySelectorAll('[data-ml-tab]'));let tab='templates',items=[],draft=[],editing=null;
+ const mlSort=document.getElementById('mlSort'),mlGuide=document.getElementById('mlGuide'),mlClear=document.getElementById('mlClear'),mlCount=document.getElementById('mlResultCount');
+ const templateConfirm=document.getElementById('mlTemplateConfirm'),templateName=document.getElementById('mlConfirmName');
+ let pendingHistoryRecord=null;
+ document.getElementById('mlConfirmCancel').onclick=()=>templateConfirm.close();
+ templateConfirm.addEventListener('close',()=>{pendingHistoryRecord=null;});
+ function suggestions(){
+  mlGuide.replaceChildren();mlClear.hidden=!search.value;
+  const q=search.value.trim().toLocaleLowerCase();
+  if(!q){mlGuide.hidden=true;search.setAttribute('aria-expanded','false');return;}
+  const names=[...new Set(items.filter(x=>x.type===tab).map(x=>String(x.name||'').trim()).filter(x=>x.toLocaleLowerCase().includes(q)))].slice(0,6);
+  names.forEach(name=>{const b=node('button','',name);b.type='button';b.setAttribute('role','option');b.onclick=()=>{search.value=name;mlGuide.hidden=true;search.setAttribute('aria-expanded','false');render();search.focus();};mlGuide.append(b);});
+  mlGuide.hidden=!names.length;search.setAttribute('aria-expanded',String(Boolean(names.length)));
+ }
+ mlClear.onclick=()=>{search.value='';suggestions();render();search.focus();};
+ mlSort.onchange=render;
+ search.addEventListener('keydown',e=>{if(e.key==='Escape'){mlGuide.hidden=true;search.setAttribute('aria-expanded','false');}if(e.key==='ArrowDown'&&!mlGuide.hidden){e.preventDefault();mlGuide.querySelector('button')?.focus();}});
+ mlGuide.addEventListener('keydown',e=>{const btns=[...mlGuide.querySelectorAll('button')],i=btns.indexOf(document.activeElement);if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();btns[(i+(e.key==='ArrowDown'?1:-1)+btns.length)%btns.length]?.focus();}if(e.key==='Escape'){mlGuide.hidden=true;search.focus();}});
+
  const storageKey='mediscript-shortcuts-v1';
  const node=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n;};
  function read(){try{const parsed=JSON.parse(localStorage.getItem(storageKey)||'[]');return Array.isArray(parsed)?parsed.filter(x=>x&&Array.isArray(x.medicines)):[];}catch(e){status.textContent='Browser storage unavailable.';return[];}}
@@ -1345,9 +1402,10 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  dialog.close();for(const values of item.medicines){if(typeof addMedicine!=='function'){status.textContent='Medicine editor is unavailable.';return;}addMedicine();const rows=document.querySelectorAll('#med-container .med-item');fillRow(rows[rows.length-1],values);}
  if(item.type==='templates'&&typeof item.advice==='string'){const advice=document.getElementById('advice');if(advice){if(advice.value.trim()&&advice.value!==item.advice&&!window.confirm('Replace the current advice with the saved template advice? Existing advice will be lost.')){status.textContent='Medicines added; existing advice kept.';}else{advice.value=item.advice;advice.dispatchEvent(new Event('input',{bubbles:true}));}}}
  if(typeof updatePreview==='function')updatePreview();document.getElementById('med-container')?.scrollIntoView({behavior:'smooth',block:'center'});}
- function setTab(value){tab=value;tabs.forEach(b=>{const on=b.dataset.mlTab===value;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});create.textContent=value==='templates'?'＋ Create template':'☆ Save current medicine';editor.hidden=true;editing=null;search.value='';render();}
+ function setTab(value){tab=value;tabs.forEach(b=>{const on=b.dataset.mlTab===value;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});create.textContent=value==='templates'?'＋ Create template':'☆ Save current medicine';editor.hidden=true;editing=null;search.value='';suggestions();render();}
  function render(){grid.replaceChildren();document.getElementById('mlTemplateCount').textContent=items.filter(x=>x.type==='templates').length;document.getElementById('mlFavoriteCount').textContent=items.filter(x=>x.type==='favorites').length;
- const q=search.value.trim().toLocaleLowerCase();const shown=items.filter(x=>x.type===tab&&[x.name,x.notes,...x.medicines.flat()].some(v=>String(v||'').toLocaleLowerCase().includes(q))).sort((a,b)=>b.created-a.created);
+ const q=search.value.trim().toLocaleLowerCase();const shown=items.filter(x=>x.type===tab&&[x.name,x.notes,...x.medicines.flat()].some(v=>String(v||'').toLocaleLowerCase().includes(q))).sort((a,b)=>{switch(mlSort.value){case 'oldest':return a.created-b.created;case 'az':return a.name.localeCompare(b.name);case 'za':return b.name.localeCompare(a.name);case 'meds':return b.medicines.length-a.medicines.length;default:return b.created-a.created;}});
+ mlCount.textContent=shown.length+' '+(shown.length===1?'item':'items')+' in this collection'+(q?' matching your search':'');
  if(!shown.length){grid.append(node('div','ml-empty',q?'No matching items. Try a different search.':tab==='templates'?'No templates yet. Create your first one using medicines in the prescription editor.':'No medicine favorites yet. Save a medicine from your current prescription.'));return;}
  for(const item of shown){const card=node('article','ml-card'),top=node('div','ml-card-top'),icon=node('div','ml-icon',item.type==='templates'?'▤':'☆'),info=node('div'),actions=node('div','ml-card-actions');
  info.append(node('h3','',item.name),node('p','',item.notes||'Personal clinical shortcut'));top.append(icon,info);card.append(top,node('span','ml-tag',item.medicines.length+' '+(item.medicines.length===1?'medicine':'medicines')));
@@ -1363,24 +1421,33 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  const before=JSON.parse(JSON.stringify(items));if(editing){const item=items.find(x=>x.id===editing);if(item){item.name=name;item.notes=notes;}}else items.push({id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:tab,name,notes,medicines:draft,advice:tab==='templates'?document.getElementById('advice')?.value||'':'',created:Date.now()});
  if(!persist()){items=before;return;}editor.hidden=true;editing=null;status.textContent='Saved to this browser’s personal library.';render();};
  create.onclick=start;document.getElementById('mlCancel').onclick=()=>{editor.hidden=true;editing=null;};
- document.getElementById('mlClose').onclick=()=>dialog.close();tabs.forEach(b=>b.onclick=()=>setTab(b.dataset.mlTab));search.addEventListener('input',render);
+ document.getElementById('mlClose').onclick=()=>dialog.close();tabs.forEach(b=>b.onclick=()=>setTab(b.dataset.mlTab));search.addEventListener('input',()=>{suggestions();render();});
  window.saveHistoryAsTemplate=(record)=>{
   if(!record||!Array.isArray(record.medicines))return false;
   const medicines=record.medicines.map(x=>Array.isArray(x)?x:(Array.isArray(x?.values)?x.values:[])).filter(v=>v.some(x=>String(x||'').trim()));
   if(!medicines.length){window.alert('This prescription has no medicines to save as a template.');return false;}
-  const name=window.prompt('Name this treatment template (for example: Pneumonia — adult):',String(record.diagnosis||'').trim()||'New treatment template');
-  if(name===null)return false;
-  if(!name.trim()){window.alert('A template name is required.');return false;}
+  pendingHistoryRecord=record;
+  templateName.value=String(record.diagnosis||'').trim().slice(0,100)||'New treatment template';
+  templateConfirm.showModal();
+  templateName.focus();
+  templateName.select();
+  return true;
+ };
+ document.getElementById('mlTemplateConfirmForm').addEventListener('submit',event=>{
+  event.preventDefault();
+  const record=pendingHistoryRecord,name=templateName.value.trim();
+  if(!record||!name){templateName.focus();return;}
   items=read();
   const adviceIndex=Array.from(document.querySelectorAll('.form-panel input,.form-panel select,.form-panel textarea')).filter(el=>!el.closest('#doctor-profile-section')&&!el.closest('#med-container')&&el.type!=='hidden'&&el.type!=='file').findIndex(el=>el.id==='advice');
   let advice='';
   if(record.fields&&adviceIndex>=0)advice=String(record.fields[String(adviceIndex)]||'');
   const item={id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:'templates',name:name.trim().slice(0,100),notes:'Saved from Prescription History · Review and personalize before prescribing',medicines,advice,created:Date.now()};
   items.push(item);
-  if(!persist())return false;
+  if(!persist()){items.pop();return;}
+  templateConfirm.close();
   status.textContent='Treatment template created. Open Templates & Favorites to use it.';
-  return true;
- };
+  window.dispatchEvent(new CustomEvent('mediscript-template-saved',{detail:{name:item.name}}));
+ });
  window.openMedicineLibrary=()=>{items=read();status.textContent='';dialog.showModal();setTab('templates');};
 })();
 </script>
@@ -2793,7 +2860,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
      if(r.diagnosis)card.append(el('p','history-record-diagnosis',r.diagnosis.slice(0,240)));
      const actions=el('div','history-record-buttons');
      actions.append(button('▤ Make Template','',()=>{
-       if(window.saveHistoryAsTemplate?.(r)){notify('Treatment template saved to your library.');}
+       window.saveHistoryAsTemplate?.(r);
      }));
      actions.append(button('↗ Open prescription','history-open',async()=>{
        if(hasUnsavedWork()&&!(await askHistoryConfirmation('open',r.patientName)))return;
