@@ -190,3 +190,88 @@
  #msSettingsDialog .mss-preview-panel,#msSettingsDialog .mss-preview-rx {padding:10px}
  #msSettingsDialog .mss-topbar {gap:5px}
 }
+
+
+/* Settings & Appearance v2 enhancements — scoped only to this dialog. */
+#msSettingsDialog[data-mode=dark] {
+  --mss-bg:#0b131c;
+  --mss-surface:#132129;
+  --mss-surface-alt:#1b2c35;
+  --mss-ink:#eff8f7;
+  --mss-muted:#bbd1d2;
+  --mss-line:#35505c;
+  background:#132129!important;
+  color:#eff8f7;
+  border-color:#35505c;
+}
+#msSettingsDialog[data-mode=dark] .mss-sidebar {background:#0b131c}
+#msSettingsDialog[data-mode=dark] .mss-theme,
+#msSettingsDialog[data-mode=dark] .mss-accent-option,
+#msSettingsDialog[data-mode=dark] .mss-density,
+#msSettingsDialog[data-mode=dark] .mss-data-action {background:var(--mss-surface);color:var(--mss-ink)}
+#msSettingsDialog[data-mode=dark] .mss-theme[aria-pressed=true],
+#msSettingsDialog[data-mode=dark] .mss-density[aria-pressed=true],
+#msSettingsDialog[data-mode=dark] .mss-accent-option[aria-pressed=true] {background:var(--mss-accent-soft);border-color:var(--mss-accent)}
+#msSettingsDialog .mss-presets {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#msSettingsDialog .mss-preset {border:1px solid var(--mss-line);background:var(--mss-surface-alt);color:var(--mss-ink);border-radius:12px;padding:14px 15px;text-align:left;display:flex;flex-direction:column;gap:5px;min-width:0;transition:border-color .16s,transform .16s}
+#msSettingsDialog .mss-preset:hover {transform:translateY(-1px);border-color:var(--mss-accent)}
+#msSettingsDialog .mss-preset strong {font-size:12px}
+#msSettingsDialog .mss-preset small {font-size:10px;color:var(--mss-muted)}
+#msSettingsDialog .mss-choice-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));margin:0}
+#msSettingsDialog .mss-choice-grid .mss-density {min-width:0;flex:none}
+#msSettingsDialog .mss-section h3 {margin-bottom:10px}
+#msSettingsDialog .mss-current {border-radius:12px;background:var(--mss-surface-alt);border:1px solid var(--mss-line);color:var(--mss-ink);padding:12px;font-size:12px}
+#msSettingsDialog .mss-inline-action {margin-top:9px;width:100%}
+#msSettingsDialog .mss-backup-actions {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#msSettingsDialog .mss-backup-actions .mss-data-action {flex-direction:column;align-items:flex-start;gap:6px;justify-content:center;min-height:90px}
+#msSettingsDialog .mss-backup-note {margin:18px 0}
+#msSettingsDialog .mss-switch-row {background:var(--mss-surface);border-radius:12px}
+#msSettingsDialog .mss-switch[aria-checked=true] {background:var(--mss-accent)}
+#msSettingsDialog .mss-panel {color:var(--mss-ink)}
+#msSettingsDialog[data-font=serif] .mss-content {font-family:Georgia,'Times New Roman',serif}
+#msSettingsDialog[data-font=modern] .mss-content {font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+#msSettingsDialog[data-spacing=tight] .mss-content {line-height:1.25}
+#msSettingsDialog[data-spacing=comfortable] .mss-content {line-height:1.55}
+#msSettingsDialog[data-spacing=relaxed] .mss-content {line-height:1.9}
+#msSettingsDialog[data-spacing=relaxed] .mss-hint {line-height:1.95}
+#msSettingsDialog[data-spacing=tight] .mss-hint {line-height:1.35}
+#msSettingsDialog[data-bold=true] .mss-hint,
+#msSettingsDialog[data-bold=true] .mss-side-link,
+#msSettingsDialog[data-bold=true] .mss-intro {font-weight:750}
+#msSettingsDialog[data-focus=extra] :focus-visible {outline:4px solid var(--mss-accent)!important;outline-offset:4px!important}
+#msSettingsDialog[data-density=compact] .mss-switch-row {padding:10px 13px;margin-bottom:6px}
+#msSettingsDialog[data-density=compact] .mss-content {padding-top:17px;padding-bottom:17px}
+#msSettingsDialog[data-density=compact] .mss-section {margin-bottom:14px}
+#msSettingsDialog[data-density=compact] .mss-side-link {padding:9px 11px}
+#msSettingsDialog[data-density=spacious] .mss-switch-row {padding:24px;margin-bottom:18px}
+#msSettingsDialog[data-density=spacious] .mss-content {padding-top:38px}
+#msSettingsDialog[data-density=spacious] .mss-section {margin-bottom:38px}
+#msSettingsDialog[data-corners=square] .mss-preset,
+#msSettingsDialog[data-corners=square] .mss-density,
+#msSettingsDialog[data-corners=square] .mss-switch-row,
+#msSettingsDialog[data-corners=square] .mss-data-action,
+#msSettingsDialog[data-corners=square] .mss-side-link,
+#msSettingsDialog[data-corners=square] .mss-theme,
+#msSettingsDialog[data-corners=square] .mss-close {border-radius:4px!important}
+#msSettingsDialog[data-surface=flat] .mss-side-link,
+#msSettingsDialog[data-surface=flat] .mss-theme,
+#msSettingsDialog[data-surface=flat] .mss-done,
+#msSettingsDialog[data-surface=flat] .mss-preset {box-shadow:none!important}
+#msSettingsDialog[data-surface=flat] .mss-sidebar {background:var(--mss-surface)}
+#msSettingsDialog .mss-side-link {white-space:normal}
+#msSettingsDialog .mss-safe-note {font-size:11px}
+#msSettingsDialog button {touch-action:manipulation}
+#msSettingsDialog .mss-backup-actions button:hover,
+#msSettingsDialog .mss-choice-grid button:hover {border-color:var(--mss-accent)}
+@media(max-width:760px) {
+ #msSettingsDialog .mss-sidebar {padding-bottom:10px}
+ #msSettingsDialog .mss-side-nav {gap:6px}
+ #msSettingsDialog .mss-side-link {min-width:max-content}
+ #msSettingsDialog .mss-presets {grid-template-columns:repeat(2,minmax(0,1fr))}
+ #msSettingsDialog .mss-backup-actions {grid-template-columns:1fr 1fr}
+}
+@media(max-width:480px) {
+ #msSettingsDialog .mss-presets,#msSettingsDialog .mss-backup-actions {grid-template-columns:1fr 1fr}
+ #msSettingsDialog .mss-choice-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+ #msSettingsDialog .mss-backup-actions .mss-data-action {padding:11px}
+}
