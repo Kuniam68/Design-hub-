@@ -1312,6 +1312,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 <style>
 .ml-dialog{border:0;padding:0;width:min(960px,calc(100vw - 24px));max-height:90dvh;margin:auto;border-radius:26px;overflow:auto;background:#f6faf8;color:#173f36;box-shadow:0 28px 95px #092e3c70;font-family:inherit}
 .ml-dialog::backdrop{background:#092c38ac;backdrop-filter:blur(6px)}
+/* Prevent underlying page scrolling while the Templates modal is open, across viewport sizes. */
+html.templates-modal-open,html.templates-modal-open body{overscroll-behavior:none;}
+html.templates-modal-open body{overflow:hidden!important;}
 /* Keep the library modal anchored to the viewport on iPad Safari/Chrome after template navigation. */
 #medicineLibraryDialog[open]{position:fixed;inset:0;margin:auto;max-height:calc(100dvh - 24px);overscroll-behavior:contain;scrollbar-gutter:stable;}
 #medicineLibraryDialog .ml-head{scroll-margin-top:0;}
@@ -1512,8 +1515,26 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    return true;
   }catch(error){console.error('Template save failed:',error);status.textContent='Template could not be saved: '+String(error?.message||'Unexpected error');window.mediScriptConfirm?.('Template not saved','The template could not be saved. Your prescription editor is still available. Please retry after checking browser storage.','OK',false,'Close');return false;}
  };
- window.openMedicineLibrary=()=>{items=read();status.textContent='';setTab('templates');if(!dialog.open)dialog.showModal();dialog.scrollTop=0;};
- if(new URLSearchParams(location.search).get('openTemplates')==='1')window.addEventListener('load',()=>{history.scrollRestoration='manual';window.scrollTo(0,0);window.openMedicineLibrary();history.replaceState(null,'',location.pathname);requestAnimationFrame(()=>{window.scrollTo(0,0);const d=document.getElementById('medicineLibraryDialog');if(d)d.scrollTop=0;});});
+ window.openMedicineLibrary=()=>{
+  items=read();status.textContent='';setTab('templates');
+  if(!dialog.open)dialog.showModal();
+  // Modal has its own scroll container. Do not move the underlying page.
+  dialog.scrollTop=0;
+  document.documentElement.classList.add('templates-modal-open');
+};
+dialog.addEventListener('close',()=>document.documentElement.classList.remove('templates-modal-open'));
+ if(new URLSearchParams(location.search).get('openTemplates')==='1'){
+  // On iPad, scroll restoration and browser chrome resizing can occur after load.
+  history.scrollRestoration='manual';
+  const openOnReturn=()=>{
+    window.scrollTo({top:0,left:0,behavior:'instant'});
+    window.openMedicineLibrary();
+    history.replaceState(null,'',location.pathname);
+    dialog.scrollTop=0;
+  };
+  if(document.readyState==='complete')openOnReturn();
+  else window.addEventListener('load',openOnReturn,{once:true});
+}
 })();
 </script>
 <dialog class="patient-directory" id="patientDirectoryDialog" aria-labelledby="pdTitle">
