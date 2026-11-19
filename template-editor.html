@@ -162,7 +162,7 @@ window.saveDoctorProfileToCloud=async function(){
     console.error('Profile save failed:',error);
     showProfileStatus('Could not save. Check your connection and Firestore permissions.',true);
     return false;
-  }finally{if(button)button.disabled=false;}
+  }
 };
 onAuthStateChanged(auth,user=>{
   if(!user){location.replace('./login.html');return;}
