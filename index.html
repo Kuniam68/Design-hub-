@@ -1369,7 +1369,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .ml-editor-actions{display:flex;gap:9px;flex-wrap:wrap}
 .ml-note{font-size:11px;line-height:1.6;color:#738c81;margin-top:16px}
 @media(max-width:620px){.ml-dialog{width:calc(100vw - 14px);border-radius:19px}.ml-head{padding:30px 20px 23px}.ml-head h2{font-size:25px}.ml-body{padding:17px 14px 24px}.ml-grid{grid-template-columns:1fr}.ml-tools .ml-primary{width:100%}}
-.ml-sort{white-space:nowrap;flex-wrap:nowrap!important}.ml-library-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.ml-tools{align-items:end!important}.ml-tools>.ml-primary{height:48px;white-space:nowrap}.ml-tools .ml-search-wrap{min-width:0}.ml-sort select{min-width:160px}.template-workspace-banner{position:sticky;top:0;z-index:20;padding:12px 18px;background:linear-gradient(100deg,#104e53,#087f70);color:white;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:700;box-shadow:0 5px 22px #143d3d35}.template-workspace-banner button{background:white;color:#075e56;border:0;border-radius:10px;padding:9px 14px;font-weight:800;cursor:pointer}@media(max-width:620px){.ml-tools>.ml-primary{width:100%}.ml-sort{width:auto!important}.ml-library-bar{align-items:center}}\n</style>\n<dialog class="ml-dialog" id="medicineLibraryDialog" aria-labelledby="mlTitle">
+.ml-sort{white-space:nowrap;flex-wrap:nowrap!important}.ml-library-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.ml-tools{align-items:end!important}.ml-tools>.ml-primary{height:48px;white-space:nowrap}.ml-tools .ml-search-wrap{min-width:0}.ml-sort select{min-width:160px}.template-workspace-banner{position:sticky;top:0;z-index:20;padding:12px 18px;background:linear-gradient(100deg,#104e53,#087f70);color:white;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:700;box-shadow:0 5px 22px #143d3d35}.template-workspace-banner[hidden]{display:none!important}.template-workspace-banner button{background:white;color:#075e56;border:0;border-radius:10px;padding:9px 14px;font-weight:800;cursor:pointer}@media(max-width:620px){.ml-tools>.ml-primary{width:100%}.ml-sort{width:auto!important}.ml-library-bar{align-items:center}}\n</style>\n<dialog class="ml-dialog" id="medicineLibraryDialog" aria-labelledby="mlTitle">
  <header class="ml-head"><button type="button" class="ml-x" id="mlClose" aria-label="Close medicine library">×</button><div class="ml-kicker">MEDISCRIPT PRO · CLINICAL SHORTCUTS</div><h2 id="mlTitle">Templates &amp; Favorites</h2><p>Your personal prescribing collection. Keep trusted combinations and frequently used medicines within easy reach.</p><div class="ml-metrics"><div class="ml-metric"><strong id="mlTemplateCount">0</strong><small>Saved templates</small></div><div class="ml-metric"><strong id="mlFavoriteCount">0</strong><small>Medicine favorites</small></div></div></header>
  <div class="ml-body">
   <div class="ml-switch" role="group" aria-label="Library collection"><button class="ml-tab on" type="button" data-ml-tab="templates" aria-pressed="true">▤ Prescription Templates</button><button class="ml-tab" type="button" data-ml-tab="favorites" aria-pressed="false">☆ Medicine Favorites</button></div>
@@ -1474,7 +1474,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  window.saveFullPrescriptionTemplate=()=>{
    const record=window.getMediScriptPrescriptionSnapshot?.();
    if(!record){window.alert('Prescription editor is not ready.');return false;}
-   const name=String(window.mediscriptTemplateName||record.diagnosis||'New prescription template').trim().slice(0,100);
+   const name=String((window.mediscriptTemplateName==='New prescription template'?record.diagnosis:window.mediscriptTemplateName)||record.diagnosis||'New prescription template').trim().slice(0,100);
    const fullRecord=JSON.parse(JSON.stringify(record));delete fullRecord.editedFrom;
    const medicines=fullRecord.medicines.map(x=>Array.isArray(x)?x:(x.values||[]));
    const old=items;items=read();
@@ -1483,6 +1483,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    else{const id='ml'+Date.now()+Math.random().toString(36).slice(2);items.push({id,type:'templates',name,notes:'Complete prescription template · Includes example patient details',medicines,advice:'',fullRecord,created:Date.now()});window.mediscriptTemplateId=id;}
    if(!persist()){items=old;window.alert('Template could not be saved. Check browser storage.');return false;}
    window.dispatchEvent(new Event('mediscript-template-saved'));
+   window.setMediScriptTemplateMode?.(false);
+   window.openMedicineLibrary?.();
    return true;
  };
  window.openMedicineLibrary=()=>{items=read();status.textContent='';dialog.showModal();setTab('templates');};
@@ -2925,7 +2927,7 @@ document.getElementById('templateWorkspaceExit').onclick=()=>{
      },r.id,'template'));
      actions.append(button('↗ Open prescription','history-open',async()=>{
        if(hasUnsavedWork()&&!(await askHistoryConfirmation('open',r.patientName)))return;
-       try{restore(r);editingSourceId=r.id;dialog.close();document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});}
+       try{window.setMediScriptTemplateMode?.(false);restore(r);editingSourceId=r.id;dialog.close();document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});}
        catch(error){notify('Unable to open this record. '+error.message,true);}
      },r.id,'open'));
      actions.append(button(r.saved?'↶ Unsave':'Save permanently','',async()=>{
