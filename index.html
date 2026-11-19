@@ -127,7 +127,7 @@ window.historyCloud={
   const ref=doc(db,'doctors',user.uid,'prescriptions',id);
   const snap=await getDoc(ref);
   if(!snap.exists())throw Error('Record not found.');
-  await setDoc(ref,{saved:false,favorite:false,expiresAt:new Date(Date.now()+86400000)},{merge:true});
+  await setDoc(ref,{saved:false,favorite:Boolean(snap.data().favorite),expiresAt:snap.data().favorite?null:new Date(Date.now()+86400000)},{merge:true});
  },
  async favorite(id,value){
   const user=auth.currentUser;
@@ -1318,7 +1318,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .ml-switch{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:20px}
 .ml-tab{border:1px solid #d0e7dd;border-radius:13px;padding:12px 17px;background:white;color:#356b5d;font-size:12px;font-weight:800;cursor:pointer}
 .ml-tab.on{background:#087d70;border-color:#087d70;color:white;box-shadow:0 5px 16px #087d7030}
-.ml-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:15px}
+.ml-tools{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px}
 .ml-search-wrap{flex:1;min-width:210px;position:relative}
 .ml-search-label{display:block;font-size:12px;font-weight:800;color:#315e53;margin-bottom:8px}
 .ml-search-icon{display:grid;place-items:center;width:37px;height:37px;flex:none;border-radius:11px;background:#e5f5ee;color:#087d70;font-size:19px}
@@ -1331,7 +1331,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .ml-guide button:hover,.ml-guide button:focus-visible{background:#e8f7f0;outline:0}
 .ml-library-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 17px;flex-wrap:wrap}
 .ml-library-count{color:#64877a;font-size:12px;font-weight:700}
-.ml-sort{display:flex;align-items:center;gap:8px;color:#3a7164;font-size:12px;font-weight:800}
+#mlCreate{align-self:flex-end;height:48px;margin:0 0 0 0!important}.ml-sort{display:flex;align-items:center;gap:8px;white-space:nowrap;color:#3a7164;font-size:12px;font-weight:800}
 .ml-sort select{border:1px solid #d0e6db;background:white;border-radius:11px;padding:9px 12px;color:#21594d;font:inherit;font-size:12px;max-width:185px}
 .ml-template-confirm{border:0;padding:0;margin:auto;width:min(470px,calc(100vw - 30px));max-height:90dvh;overflow:auto;border-radius:25px;background:white;color:#173f36;box-shadow:0 25px 90px #092d385a;font-family:inherit;animation:historyEnter .22s ease-out}
 .ml-template-confirm::backdrop{background:#092d39ad;backdrop-filter:blur(6px)}
@@ -1373,7 +1373,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  <header class="ml-head"><button type="button" class="ml-x" id="mlClose" aria-label="Close medicine library">×</button><div class="ml-kicker">MEDISCRIPT PRO · CLINICAL SHORTCUTS</div><h2 id="mlTitle">Templates &amp; Favorites</h2><p>Your personal prescribing collection. Keep trusted combinations and frequently used medicines within easy reach.</p><div class="ml-metrics"><div class="ml-metric"><strong id="mlTemplateCount">0</strong><small>Saved templates</small></div><div class="ml-metric"><strong id="mlFavoriteCount">0</strong><small>Medicine favorites</small></div></div></header>
  <div class="ml-body">
   <div class="ml-switch" role="group" aria-label="Library collection"><button class="ml-tab on" type="button" data-ml-tab="templates" aria-pressed="true">▤ Prescription Templates</button><button class="ml-tab" type="button" data-ml-tab="favorites" aria-pressed="false">☆ Medicine Favorites</button></div>
-  <div class="ml-tools"><div class="ml-search-wrap"><label class="ml-search-label" for="mlSearch">Find a treatment template</label><div class="ml-search"><span class="ml-search-icon" aria-hidden="true">⌕</span><input id="mlSearch" type="search" autocomplete="off" placeholder="Search by disease, medicine or template name…" aria-label="Search templates and medicines" aria-expanded="false" aria-controls="mlGuide"><button type="button" class="ml-clear" id="mlClear" aria-label="Clear search" hidden>×</button></div><div id="mlGuide" class="ml-guide" role="listbox" hidden></div></div><button type="button" class="ml-primary" id="mlCreate">＋ Create template</button></div><div class="ml-library-bar"><span id="mlResultCount" class="ml-library-count" role="status"></span><label class="ml-sort">Sort by <select id="mlSort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="az">Name A–Z</option><option value="za">Name Z–A</option><option value="meds">Most medicines</option></select></label></div>
+  <div class="ml-tools"><div class="ml-search-wrap"><label class="ml-search-label" for="mlSearch">Find a treatment template</label><div class="ml-search"><span class="ml-search-icon" aria-hidden="true">⌕</span><input id="mlSearch" type="search" autocomplete="off" placeholder="Search by disease, medicine or template name…" aria-label="Search templates and medicines" aria-expanded="false" aria-controls="mlGuide"><button type="button" class="ml-clear" id="mlClear" aria-label="Clear search" hidden>×</button></div><div id="mlGuide" class="ml-guide" role="listbox" hidden></div></div><button type="button" class="ml-primary" id="mlCreate">＋ Create template</button></div><div class="ml-library-bar"><label class="ml-sort">Sort by <select id="mlSort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="az">Name A–Z</option><option value="za">Name Z–A</option><option value="meds">Most medicines</option></select></label><span id="mlResultCount" class="ml-library-count" role="status"></span></div>
   <div class="ml-editor" id="mlEditor" hidden><h3 id="mlEditorTitle">Create template</h3><p id="mlEditorHint">Save a reusable medicine combination from your prescription editor.</p><label class="ml-field">Collection name<input id="mlName" maxlength="100" placeholder="e.g. My commonly used regimen"></label><label class="ml-field">Notes (optional)<textarea id="mlNotes" maxlength="300" placeholder="Personal reference notes — not patient details"></textarea></label><div class="ml-editor-actions"><button type="button" class="ml-primary" id="mlSave">Save to library</button><button type="button" class="ml-secondary" id="mlCancel">Cancel</button></div></div>
   <div class="ml-grid" id="mlGrid"></div><div class="ml-status" id="mlStatus" role="status"></div>
   <p class="ml-note">Personal shortcuts only. Stored on this browser/device, not synced to Firebase. Never store patient information in templates. Review each medicine, formulation, strength, dose, route, frequency and duration before use.</p>
@@ -1416,7 +1416,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  function persist(){try{localStorage.setItem(storageKey,JSON.stringify(items));return true;}catch(e){status.textContent='Could not save. Check browser storage permissions or available space.';return false;}}
  function medicinesOnPage(){return Array.from(document.querySelectorAll('#med-container .med-item')).map(row=>Array.from(row.querySelectorAll('input,select,textarea')).map(el=>el.type==='checkbox'?el.checked:el.value)).filter(values=>String(values[1]||'').trim());}
  function fillRow(row,values){const controls=Array.from(row.querySelectorAll('input,select,textarea'));controls.forEach((control,i)=>{if(i>=values.length)return;if(control.type==='checkbox')control.checked=Boolean(values[i]);else control.value=String(values[i]??'');});const form=row.querySelector('.m-form');if(form&&typeof toggleFormMode==='function')toggleFormMode(form);if(typeof updatePreview==='function')updatePreview();}
- function apply(item){if(item.fullRecord){if(!window.confirm('Open the complete saved template? Your current unsaved prescription will be replaced.'))return;dialog.close();window.setMediScriptTemplateMode?.(true,item.name);window.restoreMediScriptPrescription?.(item.fullRecord);return;}if(!item.medicines.length)return;const existing=Array.from(document.querySelectorAll('#med-container .med-item')).filter(row=>row.querySelector('.m-name')?.value.trim());if(existing.length&&!window.confirm('Add these medicines to the current prescription? Existing medicines will be kept. Review all details before prescribing.'))return;
+ async function apply(item){if(item.fullRecord){if(!(await window.mediScriptConfirm('Open complete template?','Your current unsaved prescription will be replaced.','Open template')))return;dialog.close();window.setMediScriptTemplateMode?.(true,item.name);window.restoreMediScriptPrescription?.(item.fullRecord);return;}if(!item.medicines.length)return;const existing=Array.from(document.querySelectorAll('#med-container .med-item')).filter(row=>row.querySelector('.m-name')?.value.trim());if(existing.length&&!(await window.mediScriptConfirm('Add template medicines?','Existing medicines will be kept. Review all details before prescribing.','Add medicines')))return;
  dialog.close();for(const values of item.medicines){if(typeof addMedicine!=='function'){status.textContent='Medicine editor is unavailable.';return;}addMedicine();const rows=document.querySelectorAll('#med-container .med-item');fillRow(rows[rows.length-1],values);}
  if(item.type==='templates'&&typeof item.advice==='string'){const advice=document.getElementById('advice');if(advice){if(advice.value.trim()&&advice.value!==item.advice&&!window.confirm('Replace the current advice with the saved template advice? Existing advice will be lost.')){status.textContent='Medicines added; existing advice kept.';}else{advice.value=item.advice;advice.dispatchEvent(new Event('input',{bubbles:true}));}}}
  if(typeof updatePreview==='function')updatePreview();document.getElementById('med-container')?.scrollIntoView({behavior:'smooth',block:'center'});}
@@ -1429,7 +1429,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  info.append(node('h3','',item.name),node('p','',item.notes||'Personal clinical shortcut'));top.append(icon,info);card.append(top,node('span','ml-tag',item.medicines.length+' '+(item.medicines.length===1?'medicine':'medicines')));
  const use=node('button','ml-primary',item.fullRecord?'↗ Open full template':'＋ Add to prescription');use.type='button';use.onclick=()=>apply(item);
  const edit=node('button','ml-secondary','Edit details');edit.type='button';edit.onclick=()=>{editing=item.id;draft=item.medicines.map(v=>v.slice());document.getElementById('mlName').value=item.name;document.getElementById('mlNotes').value=item.notes||'';document.getElementById('mlEditorTitle').textContent='Edit library item';document.getElementById('mlEditorHint').textContent='Update the label and notes. Medicine details stay unchanged.';editor.hidden=false;editor.scrollIntoView({block:'nearest',behavior:'smooth'});};
- const del=node('button','ml-danger','Delete');del.type='button';del.onclick=()=>{if(!window.confirm('Delete this saved library item? This cannot be undone.'))return;items=items.filter(x=>x.id!==item.id);if(persist()){status.textContent='Item deleted.';render();}};
+ const del=node('button','ml-danger','Delete');del.type='button';del.onclick=async()=>{if(!(await window.mediScriptConfirm('Delete library item?','This saved item will be permanently deleted. This cannot be undone.','Delete item',true)))return;items=items.filter(x=>x.id!==item.id);if(persist()){status.textContent='Item deleted.';render();}};
  actions.append(use,edit,del);card.append(actions);grid.append(card);}
  }
  function start(){editing=null;const medicines=medicinesOnPage();if(!medicines.length){status.textContent='Add a medicine with its name to the prescription editor first.';return;}
@@ -1947,6 +1947,34 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   </div>
 </div>
 
+<style>
+.msp-choice{border:0;border-radius:25px;padding:0;width:min(460px,calc(100vw - 32px));max-height:90dvh;box-shadow:0 30px 90px #092d385e;background:white;color:#16483e;font-family:inherit}
+.msp-choice::backdrop{background:#082e38a8;backdrop-filter:blur(7px)}
+.msp-choice-inner{padding:33px 30px 29px;text-align:center}
+.msp-choice-symbol{width:68px;height:68px;margin:0 auto 17px;display:grid;place-items:center;border-radius:21px;background:#e2f5ed;color:#078376;font-size:32px}
+.msp-choice h2{font-size:23px;line-height:1.25;margin:0 0 12px;color:#16483e}
+.msp-choice p{color:#64857c;line-height:1.6;font-size:14px;margin:0 0 24px}
+.msp-choice-actions{display:flex;gap:11px}
+.msp-choice-actions button{flex:1;min-width:0;padding:13px 8px;border-radius:12px;font:inherit;font-weight:800;cursor:pointer;border:1px solid #cbe4d8;background:#f0f7f3;color:#356c5e}
+.msp-choice-actions .msp-choice-accept{background:#087d70;color:white;border-color:#087d70}
+.msp-choice-actions .msp-choice-accept.danger{background:#bd4841;border-color:#bd4841}
+@media(max-width:440px){.msp-choice-inner{padding:25px 18px}.msp-choice-actions{flex-direction:column-reverse}}
+</style>
+<dialog id="mspChoice" class="msp-choice" aria-labelledby="mspChoiceTitle" aria-describedby="mspChoiceDescription">
+<div class="msp-choice-inner"><div class="msp-choice-symbol" aria-hidden="true">▤</div><h2 id="mspChoiceTitle"></h2><p id="mspChoiceDescription"></p><div class="msp-choice-actions"><button type="button" id="mspChoiceCancel">Keep editing</button><button type="button" class="msp-choice-accept" id="mspChoiceAccept">Continue</button></div></div></dialog>
+<script>
+window.mediScriptConfirm=(title,description,accept='Continue',danger=false)=>new Promise(resolve=>{
+ const dialog=document.getElementById('mspChoice');
+ document.getElementById('mspChoiceTitle').textContent=title;
+ document.getElementById('mspChoiceDescription').textContent=description;
+ const yes=document.getElementById('mspChoiceAccept'),no=document.getElementById('mspChoiceCancel');
+ yes.textContent=accept;yes.classList.toggle('danger',danger);
+ const done=(value)=>{dialog.close();resolve(value);};
+ yes.onclick=()=>done(true);no.onclick=()=>done(false);
+ dialog.oncancel=e=>{e.preventDefault();done(false)};
+ dialog.showModal();no.focus();
+});
+</script>
 <div id="templateWorkspaceBanner" class="template-workspace-banner" hidden><span>▤ TEMPLATE WORKSPACE · Complete prescription saved only to Templates & Favorites</span><button type="button" id="templateWorkspaceExit">Exit template mode</button></div>
 <script>
 window.mediscriptTemplateMode=false;window.mediscriptTemplateName='';window.mediscriptTemplateId='';
@@ -1956,14 +1984,14 @@ window.setMediScriptTemplateMode=(enabled,name='')=>{
  const banner=document.getElementById('templateWorkspaceBanner');banner.hidden=!enabled;
  document.getElementById('btnDownload')?.setAttribute('title',enabled?'Download PDF and save complete template':'Download PDF and save to Prescription History');
 };
-window.beginFullPrescriptionTemplate=()=>{
- if(!window.confirm('Start a new full prescription template? Any unsaved work in the current editor will be replaced.'))return;
+window.beginFullPrescriptionTemplate=async()=>{
+ if(!(await window.mediScriptConfirm('Create a new template?','Your current unsaved editor content will be replaced. Your doctor profile remains unchanged.','Create template')))return;
  window.startNewPrescription(true);
  window.setMediScriptTemplateMode(true,'New prescription template');
  document.getElementById('pName')?.focus();
 };
-document.getElementById('templateWorkspaceExit').onclick=()=>{
- if(window.confirm('Leave template mode? Your current template will remain in the editor but future downloads will save to Prescription History.'))window.setMediScriptTemplateMode(false);
+document.getElementById('templateWorkspaceExit').onclick=async()=>{
+ if(await window.mediScriptConfirm('Exit template workspace?','The current content stays in the editor, but future downloads will save to Prescription History.','Exit workspace'))window.setMediScriptTemplateMode(false);
 };
 </script>
 <!-- ================= RIGHT PANEL: LIVE PREVIEW ================= -->
@@ -2913,8 +2941,8 @@ document.getElementById('templateWorkspaceExit').onclick=()=>{
      top.append(icon,main);card.append(top);
      const meta=el('div','history-record-meta');
      if(r.favorite)meta.append(el('span','history-fav','★ Favorite'));
-     else if(r.saved)meta.append(el('span','','✓ Saved'));
-     else{
+     if(r.saved)meta.append(el('span','','✓ Saved'));
+     if(!r.saved&&!r.favorite){
        const until=r.expiresAt?.toDate?.();
        meta.append(el('span','history-temp','◷ Temporary · expires '+(until?until.toLocaleString():'within 24 hours')));
      }
@@ -2932,7 +2960,7 @@ document.getElementById('templateWorkspaceExit').onclick=()=>{
      },r.id,'open'));
      actions.append(button(r.saved?'↶ Unsave':'Save permanently','',async()=>{
        if(busy)return;busy=true;render();notify('Saving record…');
-       try{if(r.saved){await window.historyCloud.unretain(r.id);r.saved=false;r.favorite=false;r.expiresAt={toDate:()=>new Date(Date.now()+86400000)};notify('Prescription returned to temporary status.');}else{await window.historyCloud.retain(r.id);r.saved=true;r.expiresAt=null;notify('Prescription saved permanently.');}}
+       try{if(r.saved){await window.historyCloud.unretain(r.id);r.saved=false;r.expiresAt=r.favorite?null:{toDate:()=>new Date(Date.now()+86400000)};notify(r.favorite?'Permanent save removed; Favorite status preserved.':'Prescription returned to temporary status.');}else{await window.historyCloud.retain(r.id);r.saved=true;r.expiresAt=null;notify('Prescription saved permanently.');}}
        catch(error){notify('Could not save record. Check your connection and permissions.',true);}
        finally{busy=false;render();}
      },r.id,'save'));
