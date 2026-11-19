@@ -926,7 +926,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  if(action==='history'){toggle(false);window.openPrescriptionHistory();return;}
  if(action==='patients'){toggle(false);window.openPatientDirectory();return;}
  if(action==='templates'){toggle(false);window.openMedicineLibrary();return;}
- if(action==='prescription'){toggle(false);window.location.assign('./index.html');return;}
+ if(action==='prescription'){toggle(false);window.location.assign('./index.html?newPrescription=1');return;}
  notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
  });
 })();
