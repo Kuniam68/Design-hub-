@@ -3186,5 +3186,11 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
 })();
 
 </script>
+
+<!-- Settings-only visual preference bootstrap; prescription workflows are unchanged. -->
+<script type="module" id="msAppearanceBootstrap">
+  import {initializeSettingsAppearance} from './settings-portal.js';
+  initializeSettingsAppearance().catch(error=>console.error('Appearance preferences unavailable:',error));
+</script>
 </body>
 </html>
