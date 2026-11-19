@@ -901,7 +901,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  if(action==='history'){toggle(false);window.openPrescriptionHistory();return;}
  if(action==='patients'){toggle(false);window.openPatientDirectory();return;}
  if(action==='templates'){toggle(false);window.openMedicineLibrary();return;}
- if(action==='prescription'){toggle(false);window.startNewPrescription(true);return;}
+ if(action==='prescription'){toggle(false);window.location.assign('./index.html?newPrescription=1');return;}
  notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
  });
 })();
@@ -2247,6 +2247,12 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
 
 
   window.onload = function() {
+    if (new URLSearchParams(window.location.search).get('newPrescription') === '1') {
+      // Open the initial signed-in prescription view, not a retained draft.
+      startNewPrescription(true);
+      window.history.replaceState(null, '', window.location.pathname);
+      return;
+    }
     addMedicine();
     updatePreview();
   };
