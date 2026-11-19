@@ -464,6 +464,32 @@ window.mediScriptSignOut=async function(){
 .account-signout:focus-visible{outline:3px solid #fff;outline-offset:2px}
 @media print{.account-toolbar{display:none!important}}
 </style>
+<style id="template-landscape-preview-fix">
+/* The template banner is a direct child of the two-column flex body.
+   Remove it from flex layout so it cannot consume the A4 preview column. */
+#templateWorkspaceBanner{
+  position:fixed!important;
+  top:auto!important;
+  right:16px!important;
+  bottom:16px!important;
+  left:auto!important;
+  width:min(420px,calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  height:auto!important;
+  min-height:0!important;
+  flex:none!important;
+  z-index:1005!important;
+  border-radius:14px;
+  padding:10px 12px!important;
+  gap:10px;
+  box-shadow:0 8px 28px rgba(0,0,0,.22);
+}
+#templateWorkspaceBanner span{font-size:11px;line-height:1.35}
+#templateWorkspaceBanner button{flex-shrink:0}
+@media(max-width:620px){
+ #templateWorkspaceBanner{bottom:8px!important;right:8px!important;width:calc(100vw - 16px)!important;flex-wrap:wrap}
+}
+</style>
 <style id="workspace-navigation-styles">
 :root{--workspace-header-height:64px}
 /* Original two-panel flow with an independent fixed navigation header */
