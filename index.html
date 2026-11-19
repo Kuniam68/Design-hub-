@@ -1496,7 +1496,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    return true;
   }catch(error){console.error('Template save failed:',error);status.textContent='Template could not be saved: '+String(error?.message||'Unexpected error');window.mediScriptConfirm?.('Template not saved','The template could not be saved. Your prescription editor is still available. Please retry after checking browser storage.','OK',false,'Close');return false;}
  };
- window.openMedicineLibrary=()=>{items=read();status.textContent='';dialog.showModal();setTab('templates');};
+ window.openMedicineLibrary=()=>{items=read();status.textContent='';if(!dialog.open)dialog.showModal();setTab('templates');};
+ if(new URLSearchParams(location.search).get('openTemplates')==='1')window.addEventListener('load',()=>{window.openMedicineLibrary();history.replaceState(null,'',location.pathname);});
 })();
 </script>
 <dialog class="patient-directory" id="patientDirectoryDialog" aria-labelledby="pdTitle">
@@ -2007,10 +2008,8 @@ window.setMediScriptTemplateMode=(enabled,name='')=>{
  document.getElementById('btnDownload')?.setAttribute('title',enabled?'Download PDF and save complete template':'Download PDF and save to Prescription History');
 };
 window.beginFullPrescriptionTemplate=async()=>{
- if(!(await window.mediScriptConfirm('Create a new template?','Your current unsaved editor content will be replaced. Your doctor profile remains unchanged.','Yes',false,'No')))return;
- window.startNewPrescription(true);
- window.setMediScriptTemplateMode(true,'New prescription template');
- document.getElementById('pName')?.focus();
+ if(!(await window.mediScriptConfirm('Create a new template?','Open a separate prescription editor dedicated to templates? Your current prescription will remain unchanged.','Yes',false,'No')))return;
+ window.location.assign('./template-editor.html');
 };
 document.getElementById('templateWorkspaceExit').onclick=async()=>{
  if(await window.mediScriptConfirm('Exit template workspace?','The current content stays in the editor, but future downloads will save to Prescription History.','Exit workspace'))window.setMediScriptTemplateMode(false);
