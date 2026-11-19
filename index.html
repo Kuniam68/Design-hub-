@@ -1372,7 +1372,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   if(name===null)return false;
   if(!name.trim()){window.alert('A template name is required.');return false;}
   items=read();
-  const adviceIndex=Array.from(document.querySelectorAll('.form-panel input,.form-panel select,.form-panel textarea')).filter(el=>!el.closest('#med-container')&&!el.closest('#historyDialog')).findIndex(el=>el.id==='advice');
+  const adviceIndex=Array.from(document.querySelectorAll('.form-panel input,.form-panel select,.form-panel textarea')).filter(el=>!el.closest('#doctor-profile-section')&&!el.closest('#med-container')&&el.type!=='hidden'&&el.type!=='file').findIndex(el=>el.id==='advice');
   let advice='';
   if(record.fields&&adviceIndex>=0)advice=String(record.fields[String(adviceIndex)]||'');
   const item={id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:'templates',name:name.trim().slice(0,100),notes:'Saved from Prescription History · Review and personalize before prescribing',medicines,advice,created:Date.now()};
