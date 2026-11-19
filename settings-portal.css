@@ -484,3 +484,111 @@ html[data-ms-shell-theme=dim] .workspace-menu-notice {background:#354456;color:#
   html[data-ms-ui-contrast=high] body>.form-panel :is(input,select,textarea,.section-card,.med-item) {border:2px solid var(--ms-ui-border)!important;}
   html[data-ms-ui-contrast=high] .workspace-header {border-bottom:2px solid var(--ms-ui-border)!important;}
 }
+
+/* Header theme shortcut, custom typography and confirmation: screen-only. */
+@media screen {
+  #msHeaderThemeToggle {
+    display:inline-flex;align-items:center;justify-content:center;flex:none;
+    width:36px;height:36px;padding:0;border:1px solid #c9e2d9;border-radius:11px;
+    background:#e7f4ef;color:#16685e;font:700 22px/1 system-ui,sans-serif;
+    cursor:pointer;transition:background .16s ease,border-color .16s ease;
+  }
+  #msHeaderThemeToggle:hover {background:#d8eee6;}
+  #msHeaderThemeToggle:focus-visible {outline:3px solid var(--ms-app-accent,#0e8275);outline-offset:2px;}
+  html[data-ms-shell-theme=dark] #msHeaderThemeToggle,
+  html[data-ms-shell-theme=dim] #msHeaderThemeToggle {
+    background:var(--ms-ui-control,#263d45);color:var(--ms-ui-text,#eef6f6);
+    border-color:var(--ms-ui-border,#405660);
+  }
+  html[data-ms-shell-theme=dark] #msHeaderThemeToggle:hover,
+  html[data-ms-shell-theme=dim] #msHeaderThemeToggle:hover {background:var(--ms-ui-hover,#32434b);}
+  html[data-ms-ui-scale=custom] body>.form-panel :is(label,.section-title,.checkbox-wrap label,input,select,textarea,.btn,.btn-sm,p),
+  html[data-ms-ui-scale=custom] .workspace-drawer .workspace-nav-item,
+  html[data-ms-ui-scale=custom] #msSettingsDialog .mss-content :is(p,.mss-hint,.mss-intro):not(.mss-reading-preview-copy) {
+    font-size:var(--ms-ui-custom-size,16px)!important;
+  }
+  html[data-ms-ui-spacing=custom] body>.form-panel :is(label,.section-title,.checkbox-wrap label,input,select,textarea,.form-group,.btn,.btn-sm,p),
+  html[data-ms-ui-spacing=custom] .workspace-drawer .workspace-nav-item,
+  html[data-ms-ui-spacing=custom] #msSettingsDialog .mss-content :is(p,.mss-hint,.mss-intro):not(.mss-reading-preview-copy) {
+    line-height:var(--ms-ui-custom-line-height,1.5)!important;
+  }
+  #msSettingsDialog .mss-custom-adjust {
+    margin:10px 0 23px;padding:14px 16px;border:1px solid var(--mss-line);
+    background:var(--mss-surface-alt);border-radius:13px;
+  }
+  #msSettingsDialog .mss-custom-adjust[hidden] {display:none!important;}
+  #msSettingsDialog .mss-custom-adjust label {
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    font-size:12px;color:var(--mss-ink);margin-bottom:11px;
+  }
+  #msSettingsDialog .mss-custom-adjust output {
+    background:var(--mss-surface);color:var(--mss-accent);
+    padding:5px 9px;border-radius:8px;font-weight:750;white-space:nowrap;
+  }
+  #msSettingsDialog .mss-custom-adjust input[type=range] {
+    display:block;width:100%;accent-color:var(--mss-accent);cursor:pointer;
+    min-height:32px;margin:0;
+  }
+  #msSettingsDialog .mss-range-ends {
+    display:flex;justify-content:space-between;font-size:10px;
+    color:var(--mss-muted);margin-top:3px;
+  }
+  #msSettingsDialog .mss-reading-preview-card {
+    padding:19px 20px;margin:20px 0 4px;border-radius:16px;
+    background:var(--mss-surface-alt);border:1px solid var(--mss-line);
+  }
+  #msSettingsDialog .mss-reading-preview-head {
+    display:flex;justify-content:space-between;align-items:center;
+    gap:10px;flex-wrap:wrap;margin-bottom:14px;color:var(--mss-ink);font-size:12px;
+  }
+  #msSettingsDialog .mss-reading-preview-head span {
+    color:var(--mss-accent);font-size:11px;font-weight:700;
+  }
+  #msSettingsDialog .mss-reading-preview-copy {
+    color:var(--mss-ink);padding:12px 14px;margin:0;
+    background:var(--mss-surface);border-radius:11px;
+    border:1px solid var(--mss-line);
+    transition:font-size .1s ease,line-height .1s ease;
+  }
+  #msResetConfirmDialog {
+    box-sizing:border-box;width:min(420px,calc(100vw - 28px));
+    max-height:calc(100dvh - 28px);overflow:auto;margin:auto;padding:0;
+    border:1px solid var(--ms-ui-border,#cbded7);border-radius:20px;
+    background:var(--ms-ui-card,#fff);color:var(--ms-ui-text,#1b3535);
+    box-shadow:0 24px 85px rgba(10,28,36,.3);
+    font-family:var(--ms-app-font,system-ui,sans-serif);
+  }
+  #msResetConfirmDialog::backdrop {background:rgba(8,17,26,.65);backdrop-filter:blur(3px);}
+  #msResetConfirmDialog .mss-reset-body {padding:26px 25px 23px;text-align:center;}
+  #msResetConfirmDialog .mss-reset-icon {
+    display:grid;place-items:center;width:55px;height:55px;margin:0 auto 14px;
+    border-radius:17px;background:var(--ms-ui-hover,#eaf5f1);
+    color:var(--ms-app-accent,#0e8275);font-size:31px;
+  }
+  #msResetConfirmDialog h2 {font-size:19px;line-height:1.4;margin:0 0 8px;color:inherit;}
+  #msResetConfirmDialog p {
+    font-size:12px;line-height:1.7;margin:0 0 23px;
+    color:var(--ms-ui-muted,#57706c);
+  }
+  #msResetConfirmDialog .mss-reset-actions {display:flex;gap:10px;justify-content:center;}
+  #msResetConfirmDialog .mss-reset-actions button {
+    cursor:pointer;flex:1;min-height:43px;padding:10px 12px;border-radius:11px;
+    font-weight:700;font-size:12px;line-height:1.35;font-family:inherit;
+    border:1px solid var(--ms-ui-border,#cbded7);
+    color:var(--ms-ui-text,#1b3535);background:var(--ms-ui-control,#f8fbfa);
+  }
+  #msResetConfirmDialog .mss-reset-actions [data-ms-reset-confirm] {
+    color:#fff;background:var(--ms-app-accent,#0e8275);border-color:transparent;
+  }
+  #msResetConfirmDialog .mss-reset-actions button:focus-visible {
+    outline:3px solid var(--ms-app-accent,#0e8275);outline-offset:3px;
+  }
+  @media(max-width:560px) {
+    #msHeaderThemeToggle {width:34px;height:34px;font-size:20px;}
+    #msSettingsDialog .mss-reading-preview-card {padding:15px 13px;}
+    #msResetConfirmDialog .mss-reset-body {padding:22px 18px 19px;}
+  }
+}
+@media print {
+  #msHeaderThemeToggle,#msResetConfirmDialog {display:none!important;}
+}
