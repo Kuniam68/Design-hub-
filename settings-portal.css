@@ -409,3 +409,16 @@ html[data-ms-shell-theme=dim] .workspace-menu-notice {background:#354456;color:#
   html[data-ms-shell-theme] body{background:#fff!important;color:#000!important;}
   html[data-ms-shell-theme] .preview-panel>.page-scaler{filter:none!important;}
 }
+
+/* Apply chosen reading font to the actual Settings content as well as the editor. */
+#msSettingsDialog .mss-content {font-family:var(--ms-app-font,system-ui,sans-serif);}
+#msSettingsDialog[data-font=custom] .mss-content {font-family:var(--ms-app-font,system-ui,sans-serif)!important;}
+@media screen {
+ html[data-ms-shell-theme] body>.form-panel .section-title {color:var(--ms-app-accent,#0e8275)!important;}
+ html[data-ms-shell-theme] body>.form-panel .toggle-group input:checked+label {background:var(--ms-app-accent,#0e8275)!important;color:#fff!important;}
+ html[data-ms-shell-theme] body>.form-panel .btn-accent {background:var(--ms-app-accent,#0e8275)!important;color:white!important;}
+ html[data-ms-shell-theme] .preview-panel>.page-scaler {filter:hue-rotate(var(--ms-rx-hue,0deg));}
+ html[data-ms-shell-theme=dark] .preview-panel>.page-scaler {filter:invert(.87) hue-rotate(calc(178deg + var(--ms-rx-hue,0deg)));}
+ html[data-ms-shell-theme=dim] .preview-panel>.page-scaler {filter:invert(.78) hue-rotate(calc(180deg + var(--ms-rx-hue,0deg))) saturate(.8);}
+}
+@media print {html[data-ms-shell-theme] .preview-panel>.page-scaler{filter:none!important;}}
