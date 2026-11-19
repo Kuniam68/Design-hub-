@@ -1239,7 +1239,11 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .pd-search{display:flex;align-items:center;gap:10px;flex:1;min-width:180px;background:white;border:1px solid #cfe5da;border-radius:15px;padding:0 15px;height:50px;color:#168674}
 .pd-search:focus-within{border-color:#0a8d7b;box-shadow:0 0 0 3px #0a8d7b19}
 .pd-search input{min-width:0;flex:1;width:100%;height:45px;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;font:inherit;font-size:13px;color:#193e36}
-.pd-sort{height:50px;border:1px solid #cfe5da;border-radius:13px;background:white;color:#22594d;padding:0 12px;font:600 12px inherit}
+.pd-filter-tabs{display:flex;gap:9px;flex-wrap:wrap;width:100%;padding:12px;border:1px solid #d8ebe2;background:linear-gradient(120deg,#fff,#eef8f3);border-radius:18px}
+.pd-filter{appearance:none;border:1px solid #d2e6dc;border-radius:999px;padding:11px 15px;min-height:42px;background:white;color:#3a7061;font-size:12px;font-weight:750;cursor:pointer;transition:background .2s,color .2s,transform .2s,box-shadow .2s}
+.pd-filter:hover{transform:translateY(-1px);border-color:#70b9a5}
+.pd-filter.active{background:#087c70;border-color:#087c70;color:white;box-shadow:0 5px 15px #087c7030}
+.pd-filter:focus-visible{outline:3px solid #19a999;outline-offset:2px}
 .pd-results{font-size:12px;color:#68887d;margin-bottom:14px}
 .pd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .pd-card{background:white;border:1px solid #e0ece6;border-radius:19px;padding:19px;box-shadow:0 6px 23px #0b4d3d0a}
@@ -1265,16 +1269,17 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .pd-visit strong{display:block;font-size:13px}
 .pd-visit small{font-size:11px;color:#68887d}
 .pd-visit button{border:1px solid #bad7ca;border-radius:9px;background:white;color:#0a7668;padding:9px 12px;font-weight:700;font-size:11px;cursor:pointer}
-@media(max-width:640px){.patient-directory{width:calc(100vw - 16px);border-radius:19px}.pd-hero{padding:30px 19px 24px}.pd-hero h2{font-size:26px}.pd-body{padding:17px 14px 25px}.pd-grid{grid-template-columns:1fr}.pd-sort{width:100%}.pd-card{padding:15px}}
+@media(max-width:640px){.patient-directory{width:calc(100vw - 16px);border-radius:19px}.pd-hero{padding:30px 19px 24px}.pd-hero h2{font-size:26px}.pd-body{padding:17px 14px 25px}.pd-grid{grid-template-columns:1fr}.pd-filter-tabs{padding:9px;gap:7px}.pd-filter{padding:10px 12px;font-size:11px}.pd-card{padding:15px}}
 </style>
 <dialog class="patient-directory" id="patientDirectoryDialog" aria-labelledby="pdTitle">
  <header class="pd-hero"><button type="button" class="pd-close" id="pdClose" aria-label="Close Patient Directory">×</button><div class="pd-kicker">MEDISCRIPT PRO · PATIENT CARE</div><h2 id="pdTitle">Patient Directory</h2><p>A thoughtful home for your patients and their prescription journeys. Find the right record, faster.</p><div class="pd-stats"><div class="pd-stat"><strong id="pdPatientCount">—</strong><small>Patients</small></div><div class="pd-stat"><strong id="pdRxCount">—</strong><small>Prescriptions</small></div><div class="pd-stat"><strong id="pdSavedCount">—</strong><small>Retained records</small></div></div></header>
- <main class="pd-body"><div class="pd-toolbar"><label class="pd-search"><span aria-hidden="true">⌕</span><input type="search" id="pdSearch" placeholder="Search patient name, phone, diagnosis…" aria-label="Search patients"></label><select class="pd-sort" id="pdSort" aria-label="Sort patients"><option value="recent">Most recent</option><option value="name">Name A–Z</option><option value="visits">Most prescriptions</option></select></div><div id="pdStatus" class="pd-results" role="status">Loading patient directory…</div><section class="pd-detail" id="pdDetail" hidden aria-label="Patient details"></section><div class="pd-grid" id="pdGrid"></div></main>
+ <main class="pd-body"><div class="pd-toolbar"><label class="pd-search"><span aria-hidden="true">⌕</span><input type="search" id="pdSearch" placeholder="Search patient name, phone, diagnosis…" aria-label="Search patients"></label><div class="pd-filter-tabs" role="group" aria-label="Filter and sort patients"><button type="button" class="pd-filter active" data-pd-filter="recent" aria-pressed="true">◷ Recently Active</button><button type="button" class="pd-filter" data-pd-filter="name" aria-pressed="false">A–Z</button><button type="button" class="pd-filter" data-pd-filter="visits" aria-pressed="false">▤ Most Prescriptions</button><button type="button" class="pd-filter" data-pd-filter="saved" aria-pressed="false">✓ Saved Patients</button><button type="button" class="pd-filter" data-pd-filter="frequent" aria-pressed="false">✦ Frequent Patients</button></div></div><div id="pdStatus" class="pd-results" role="status">Loading patient directory…</div><section class="pd-detail" id="pdDetail" hidden aria-label="Patient details"></section><div class="pd-grid" id="pdGrid"></div></main>
 </dialog>
 <script>
 (function(){
- const dialog=document.getElementById('patientDirectoryDialog'),grid=document.getElementById('pdGrid'),status=document.getElementById('pdStatus'),search=document.getElementById('pdSearch'),sort=document.getElementById('pdSort'),detail=document.getElementById('pdDetail');
- let patients=[],selected=null,loading=false;
+ const dialog=document.getElementById('patientDirectoryDialog'),grid=document.getElementById('pdGrid'),status=document.getElementById('pdStatus'),search=document.getElementById('pdSearch'),filters=Array.from(dialog.querySelectorAll('[data-pd-filter]')),detail=document.getElementById('pdDetail');
+ let patients=[],selected=null,loading=false,activeFilter='recent';
+ function setFilter(value){activeFilter=value;filters.forEach(b=>{const active=b.dataset.pdFilter===value;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});render();}
  const el=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n;};
  const stamp=r=>{const t=r.createdAt;return typeof t?.toMillis==='function'?t.toMillis():typeof t?.seconds==='number'?t.seconds*1000:0;};
  const date=t=>t?new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'Date unavailable';
@@ -1296,7 +1301,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   for(const r of p.records.slice().sort((a,b)=>stamp(b)-stamp(a))){
    const visit=el('div','pd-visit'),info=el('div'),action=el('button','','View in History');action.type='button';
    info.append(el('strong','',r.diagnosis||'Prescription record'),el('small','',date(stamp(r))+(r.saved||r.favorite?' · Saved':' · Temporary')));
-   action.onclick=()=>{dialog.close();window.openPrescriptionHistory?.();};
+   action.onclick=()=>{dialog.close();window.openPrescriptionHistory?.({patientName:p.name,recordIds:p.records.map(x=>x.id)});};
    visit.append(info,action);detail.append(visit);
   }
   detail.scrollIntoView({block:'nearest',behavior:'smooth'});
@@ -1305,7 +1310,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   grid.replaceChildren();if(selected){const p=patients.find(p=>p.key===selected);if(p)showDetail(p);else{selected=null;detail.hidden=true;}}
   const term=search.value.trim().toLocaleLowerCase();
   let shown=patients.filter(p=>[p.name,p.phone,p.age,...p.records.map(r=>r.diagnosis||'')].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
-  if(sort.value==='name')shown.sort((a,b)=>a.name.localeCompare(b.name));else if(sort.value==='visits')shown.sort((a,b)=>b.records.length-a.records.length||b.last-a.last);else shown.sort((a,b)=>b.last-a.last);
+  if(activeFilter==='saved')shown=shown.filter(p=>p.records.some(r=>r.saved||r.favorite));
+  if(activeFilter==='frequent')shown=shown.filter(p=>p.records.length>=3);
+  if(activeFilter==='name')shown.sort((a,b)=>a.name.localeCompare(b.name));else if(activeFilter==='visits'||activeFilter==='frequent')shown.sort((a,b)=>b.records.length-a.records.length||b.last-a.last);else shown.sort((a,b)=>b.last-a.last);
   status.textContent=shown.length+' of '+patients.length+' patients · Grouped by name, phone and age. Confirm identity before using a record.';
   if(!shown.length){grid.append(el('div','pd-empty',patients.length?'No patients match your search. Try another name or phone number.':'No patients found yet. Download or print a prescription to start building your directory.'));return;}
   for(const p of shown){
@@ -1317,7 +1324,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   }
  }
  async function open(){
-  dialog.showModal();selected=null;detail.hidden=true;search.value='';sort.value='recent';grid.replaceChildren();status.textContent='Loading your private patient records…';
+  dialog.showModal();selected=null;detail.hidden=true;search.value='';activeFilter='recent';filters.forEach(b=>{const active=b.dataset.pdFilter==='recent';b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});grid.replaceChildren();status.textContent='Loading your private patient records…';
   if(loading)return;loading=true;
   try{const records=await window.historyCloud.list();patients=collect(records);document.getElementById('pdPatientCount').textContent=patients.length;document.getElementById('pdRxCount').textContent=records.length;document.getElementById('pdSavedCount').textContent=records.filter(r=>r.saved||r.favorite).length;render();}
   catch(err){grid.replaceChildren(el('div','pd-empty','Unable to load patients. Check your connection and Firebase access, then reopen the directory.'));status.textContent='Patient directory unavailable';console.error('Patient directory error',err);}
@@ -1325,7 +1332,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  }
  window.openPatientDirectory=open;
  document.getElementById('pdClose').onclick=()=>dialog.close();
- search.addEventListener('input',render);sort.addEventListener('change',render);
+ search.addEventListener('input',render);filters.forEach(b=>b.addEventListener('click',()=>setFilter(b.dataset.pdFilter)));
 })();
 </script>
 <dialog class="history-dialog" id="historyDialog" aria-labelledby="historyTitle">
@@ -2543,7 +2550,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 /* ===== PRESCRIPTION HISTORY: opt-in saves only, never automatic ===== */
 (function(){
  const dialog=document.getElementById('historyDialog'),list=document.getElementById('historyList'),status=document.getElementById('historyStatus'),search=document.getElementById('historySearch');
- let records=[],busy=false,loadFailed=false,hasLoaded=false,editingSourceId='';
+ let records=[],busy=false,loadFailed=false,hasLoaded=false,editingSourceId='',patientHistoryScope=null;
  const confirmation=document.getElementById('historyConfirmDialog');
  const confirmTitle=document.getElementById('historyConfirmTitle');
  const confirmDescription=document.getElementById('historyConfirmDescription');
@@ -2634,9 +2641,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  function el(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
  function button(text,cls,fn){const node=el('button',cls,text);node.type='button';node.disabled=busy;node.addEventListener('click',fn);return node;}
  function render(){
-   list.replaceChildren();document.getElementById('historyTotal').textContent=records.length+(records.length===100?'+':'')+' saved records';
+   list.replaceChildren();const visibleCount=patientHistoryScope?records.filter(r=>patientHistoryScope.ids.has(r.id)).length:records.length;document.getElementById('historyTotal').textContent=visibleCount+(records.length===100?'+':'')+' saved records';
    const term=search.value.trim().toLocaleLowerCase();
-   const found=records.filter(r=>(filter.value==='all'||filter.value==='recent'||(filter.value==='favorite'&&r.favorite)||(filter.value==='saved'&&r.saved)||(filter.value==='temporary'&&!r.saved&&!r.favorite))&&[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
+   const found=records.filter(r=>(!patientHistoryScope||patientHistoryScope.ids.has(r.id))&&(filter.value==='all'||filter.value==='recent'||(filter.value==='favorite'&&r.favorite)||(filter.value==='saved'&&r.saved)||(filter.value==='temporary'&&!r.saved&&!r.favorite))&&[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
    if(!found.length){const empty=el('div','history-empty');empty.append(el('span','',loadFailed?'⚠️':'🗂️'),el('strong','',loadFailed?'History unavailable':term?'No matching prescriptions':'No prescriptions in history yet'),el('p','',loadFailed?'The app could not retrieve your records. Please check Firebase permissions and try Refresh.':term?'Try a different patient name, phone or diagnosis.':'Download or print a prescription to add it here automatically.'));list.append(empty);return;}
    found.forEach(r=>{
      const card=el('article','history-record'),top=el('div','history-record-top'),icon=el('div','history-record-icon','▤'),main=el('div','history-record-main');
@@ -2733,7 +2740,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 
  filter.addEventListener('change',()=>setHistoryFilter(filter.value));
  window.addEventListener('mediscript-history-error',e=>{console.warn(e.detail);if(dialog.open)notify(e.detail,true);else {const status=document.getElementById('historyStatus');if(status){status.textContent=e.detail;status.style.color='#b91c1c';} }});
- window.openPrescriptionHistory=async()=>{dialog.showModal();search.value='';hideSearchGuide();setHistoryFilter('recent');if(hasLoaded){render();notify('Checking for updates…');}await refresh();const previous=lastCaptureError||(()=>{try{return sessionStorage.getItem('mediscript-history-capture-error')||'';}catch(_){return '';}})();if(previous&&!loadFailed)notify(previous,true);};
+ window.openPrescriptionHistory=async(options)=>{patientHistoryScope=options&&Array.isArray(options.recordIds)?{name:String(options.patientName||'Patient'),ids:new Set(options.recordIds)}:null;dialog.showModal();search.value='';hideSearchGuide();document.getElementById('historyTitle').textContent=patientHistoryScope?patientHistoryScope.name+' · Prescription History':'Prescription History';setHistoryFilter('recent');if(hasLoaded){render();notify('Checking for updates…');}await refresh();const previous=lastCaptureError||(()=>{try{return sessionStorage.getItem('mediscript-history-capture-error')||'';}catch(_){return '';}})();if(previous&&!loadFailed)notify(previous,true);};
 })();
 
 </script>
