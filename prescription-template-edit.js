@@ -57,6 +57,13 @@
       // Older prescription-history templates only retained medicines and advice, not a full
       // patient record. In that case start with an empty prescription and restore saved data.
       const sourceRecord = template.editRecord || template.fullRecord;
+      const rowsFrom = entries => (Array.isArray(entries) ? entries : []).map(item =>
+        Array.isArray(item) ? item.slice() :
+        Array.isArray(item && item.values) ? item.values.slice() : []);
+      const savedRows = rowsFrom(template.medicines);
+      const hasMedicineName = values => String(values && values[1] || '').trim() !== '';
+      const recordRows = sourceRecord ? rowsFrom(sourceRecord.medicines) : [];
+      const reliableRows = recordRows.some(hasMedicineName) ? recordRows : savedRows;
       let snapshot;
       if (sourceRecord &&
           sourceRecord.version === 1 &&
@@ -65,14 +72,27 @@
         snapshot = JSON.parse(JSON.stringify(sourceRecord));
       } else {
         snapshot = window.getMediScriptPrescriptionSnapshot();
-        snapshot.medicines = (Array.isArray(template.medicines) ? template.medicines : [])
-          .map(item => ({
-            values: Array.isArray(item) ? item.slice()
-              : Array.isArray(item && item.values) ? item.values.slice() : []
-          }));
       }
-
+      // Older records may have empty fullRecord/editRecord medicines while
+      // their saved library entry still contains the original treatment.
+      if (!rowsFrom(snapshot.medicines).some(hasMedicineName) &&
+          reliableRows.some(hasMedicineName)) {
+        snapshot.medicines = reliableRows.map(values => ({values}));
+      }
       window.restoreMediScriptPrescription(snapshot);
+      const loadedNames = () => Array.from(
+        document.querySelectorAll('#med-container .med-item .m-name')
+      ).map(field => String(field.value || '').trim()).filter(Boolean);
+      if (!loadedNames().length && savedRows.some(hasMedicineName)) {
+        snapshot.medicines = savedRows.map(values => ({values}));
+        window.restoreMediScriptPrescription(snapshot);
+      }
+      // Never offer Save the Changes on a blank/unrestored template.
+      if (!loadedNames().length) {
+        throw new Error(reliableRows.some(hasMedicineName)
+          ? 'Saved medicine details could not be restored.'
+          : 'No recoverable medicine names were found in this saved template.');
+      }
 
       if (!sourceRecord ||
           !sourceRecord.fields ||
