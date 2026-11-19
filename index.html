@@ -821,6 +821,17 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .history-record-buttons .history-open{background:#f4f9f6;color:#226358;border-color:#d8e7df;transition:background .18s,color .18s,box-shadow .18s,transform .18s}
 .history-record-buttons .history-open:hover,.history-record-buttons .history-open:focus-visible,.history-record-buttons .history-open:active{background:#0c796d;color:#fff;border-color:#0c796d;box-shadow:0 6px 16px #087d7033;transform:translateY(-1px)}
 .history-record-buttons .history-delete{color:#af443c;background:#fff4f1;border-color:#f3ded9}
+.history-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;padding:28px;border:1px solid #cde7dd;border-radius:20px;background:radial-gradient(ellipse at center,#e9f8f2,#fff 72%);text-align:center}
+.history-loading-art{width:108px;height:108px;position:relative;display:grid;place-items:center;margin-bottom:15px}
+.history-loading-ring{position:absolute;inset:5px;border:3px solid #d8efe6;border-top-color:#087d70;border-right-color:#2eb9a5;border-radius:50%;animation:historySpin 1.6s linear infinite}
+.history-loading-ring.second{inset:17px;border-width:2px;border-top-color:#69cbb7;border-right-color:transparent;animation:historySpin 2.1s linear infinite reverse}
+.history-loading-file{width:52px;height:64px;background:#fff;border:2px solid #87c9b7;border-radius:11px;box-shadow:0 10px 25px #087d7020;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:12px;animation:historyFloat 2s ease-in-out infinite}
+.history-loading-file i{height:4px;border-radius:5px;background:#bce6d8;animation:historyLine 1.8s ease-in-out infinite alternate}
+.history-loading-file i:nth-child(2){width:70%;animation-delay:.3s}.history-loading-file i:nth-child(3){width:85%;animation-delay:.6s}
+.history-loading strong{font-size:17px;color:#174e43}.history-loading p{font-size:12px;color:#6d8d80;margin-top:7px}
+@keyframes historySpin{to{transform:rotate(360deg)}}@keyframes historyFloat{50%{transform:translateY(-7px)}}@keyframes historyLine{to{background:#159a84;transform:scaleX(.7)}}
+@media(prefers-reduced-motion:reduce){.history-loading-ring,.history-loading-file,.history-loading-file i{animation:none!important}}
+.history-record-buttons button.history-selected{background:#0c796d!important;border-color:#0c796d!important;color:#fff!important;box-shadow:0 5px 15px #087d7029}
 .history-empty{padding:40px 20px;border:1px dashed #b8d6ca;border-radius:17px;text-align:center;background:#fff}
 .history-empty span{display:block;font-size:37px;margin-bottom:10px}
 .history-empty strong{display:block;font-size:17px}
@@ -1428,6 +1439,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   if(!medicines.length){window.alert('This prescription has no medicines to save as a template.');return false;}
   pendingHistoryRecord=record;
   templateName.value=String(record.diagnosis||'').trim().slice(0,100)||'New treatment template';
+  templateName.setCustomValidity('');
   templateConfirm.showModal();
   templateName.focus();
   templateName.select();
@@ -1437,6 +1449,9 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   event.preventDefault();
   const record=pendingHistoryRecord,name=templateName.value.trim();
   if(!record||!name){templateName.focus();return;}
+  const medicines=record.medicines.map(x=>Array.isArray(x)?x:(Array.isArray(x?.values)?x.values:[])).filter(v=>v.some(x=>String(x||'').trim()));
+  if(!medicines.length){templateName.setCustomValidity('No medicines are available in this prescription.');templateName.reportValidity();return;}
+  templateName.setCustomValidity('');
   items=read();
   const adviceIndex=Array.from(document.querySelectorAll('.form-panel input,.form-panel select,.form-panel textarea')).filter(el=>!el.closest('#doctor-profile-section')&&!el.closest('#med-container')&&el.type!=='hidden'&&el.type!=='file').findIndex(el=>el.id==='advice');
   let advice='';
@@ -1446,6 +1461,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   if(!persist()){items.pop();return;}
   templateConfirm.close();
   status.textContent='Treatment template created. Open Templates & Favorites to use it.';
+  render();
   window.dispatchEvent(new CustomEvent('mediscript-template-saved',{detail:{name:item.name}}));
  });
  window.openMedicineLibrary=()=>{items=read();status.textContent='';dialog.showModal();setTab('templates');};
@@ -2836,12 +2852,17 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
    toggleDietOthers();toggleReferral();toggleMurmur();updatePreview();
  }
  function el(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
- function button(text,cls,fn){const node=el('button',cls,text);node.type='button';node.disabled=busy;node.addEventListener('click',fn);return node;}
+ const selectedHistoryActions=new Map();
+ function button(text,cls,fn,recordId,actionKey){const node=el('button',cls,text);node.type='button';node.disabled=busy;
+  if(recordId&&actionKey){const selected=selectedHistoryActions.get(recordId)===actionKey;node.classList.toggle('history-selected',selected);node.setAttribute('aria-pressed',String(selected));}
+  node.addEventListener('click',()=>{if(recordId&&actionKey){selectedHistoryActions.set(recordId,actionKey);node.closest('.history-record-buttons')?.querySelectorAll('button.history-selected').forEach(b=>{b.classList.remove('history-selected');b.setAttribute('aria-pressed','false');});node.classList.add('history-selected');node.setAttribute('aria-pressed','true');}fn();});return node;
+ }
+ function loadingAnimation(){const box=el('div','history-loading');box.setAttribute('role','status');box.setAttribute('aria-live','polite');const art=el('div','history-loading-art');art.setAttribute('aria-hidden','true');const file=el('div','history-loading-file');for(let i=0;i<3;i++)file.append(el('i'));art.append(el('div','history-loading-ring'),el('div','history-loading-ring second'),file);box.append(art,el('strong','','Preparing your records'),el('p','','Securely organizing your prescription archive…'));return box;}
  function render(){
    list.replaceChildren();const visibleCount=patientHistoryScope?records.filter(r=>patientHistoryScope.ids.has(r.id)).length:records.length;document.getElementById('historyTotal').textContent=visibleCount+(records.length===100?'+':'')+' saved records';
    const term=search.value.trim().toLocaleLowerCase();
    const found=records.filter(r=>(!patientHistoryScope||patientHistoryScope.ids.has(r.id))&&(filter.value==='all'||filter.value==='recent'||(filter.value==='favorite'&&r.favorite)||(filter.value==='saved'&&r.saved)||(filter.value==='temporary'&&!r.saved&&!r.favorite))&&[r.patientName,r.patientPhone,r.diagnosis,r.workplace].some(v=>String(v||'').toLocaleLowerCase().includes(term)));
-   if(!found.length){const empty=el('div','history-empty');empty.append(el('span','',loadFailed?'⚠️':'🗂️'),el('strong','',loadFailed?'History unavailable':term?'No matching prescriptions':'No prescriptions in history yet'),el('p','',loadFailed?'The app could not retrieve your records. Please check Firebase permissions and try Refresh.':term?'Try a different patient name, phone or diagnosis.':'Download or print a prescription to add it here automatically.'));list.append(empty);return;}
+   if(!found.length){if(busy&&!loadFailed){list.append(loadingAnimation());return;}const empty=el('div','history-empty');empty.append(el('span','',loadFailed?'⚠️':'🗂️'),el('strong','',loadFailed?'History unavailable':term?'No matching prescriptions':'No prescriptions in history yet'),el('p','',loadFailed?'The app could not retrieve your records. Please check Firebase permissions and try Refresh.':term?'Try a different patient name, phone or diagnosis.':'Download or print a prescription to add it here automatically.'));list.append(empty);return;}
    found.forEach(r=>{
      const card=el('article','history-record'),top=el('div','history-record-top'),icon=el('div','history-record-icon','▤'),main=el('div','history-record-main');
      main.append(el('strong','',r.patientName||'Unnamed patient'));
@@ -2861,36 +2882,36 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
      const actions=el('div','history-record-buttons');
      actions.append(button('▤ Make Template','',()=>{
        window.saveHistoryAsTemplate?.(r);
-     }));
+     },r.id,'template'));
      actions.append(button('↗ Open prescription','history-open',async()=>{
        if(hasUnsavedWork()&&!(await askHistoryConfirmation('open',r.patientName)))return;
        try{restore(r);editingSourceId=r.id;dialog.close();document.querySelector('.form-panel')?.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0,behavior:'smooth'});}
        catch(error){notify('Unable to open this record. '+error.message,true);}
-     }));
+     },r.id,'open'));
      if(!r.saved)actions.append(button('Save permanently','',async()=>{
        if(busy)return;busy=true;render();notify('Saving record…');
        try{await window.historyCloud.retain(r.id);r.saved=true;r.expiresAt=null;notify('Prescription saved permanently.');}
        catch(error){notify('Could not save record. Check your connection and permissions.',true);}
        finally{busy=false;render();}
-     }));
+     },r.id,'save'));
      actions.append(button(r.favorite?'★ Unfavorite':'☆ Favorite','',async()=>{
        if(busy)return;busy=true;render();notify('Updating favorite…');
        try{await window.historyCloud.favorite(r.id,!r.favorite);if(!r.favorite){r.saved=true;r.expiresAt=null;}r.favorite=!r.favorite;notify(r.favorite?'Added to Favorites and saved.':'Removed from Favorites.');}
        catch(error){notify('Could not update favorite. Check your connection and permissions.',true);}
        finally{busy=false;render();}
-     }));
+     },r.id,'favorite'));
      actions.append(button('Delete','history-delete',async()=>{
        if(!(await askHistoryConfirmation('delete',r.patientName)))return;
        if(busy)return;busy=true;render();notify('Deleting record…');
        try{await window.historyCloud.remove(r.id);records=records.filter(x=>x.id!==r.id);notify('Prescription deleted.');}
        catch(error){notify('Delete failed. Please check your Firestore access rules and connection.',true);}
        finally{busy=false;render();}
-     }));
+     },r.id,'delete'));
      card.append(actions);list.append(card);
    });
  }
  async function refresh(){
-   if(busy)return;busy=true;notify('Loading prescription history…');list.replaceChildren(el('div','history-empty','Loading records…'));
+   if(busy)return;busy=true;notify('Loading prescription history…');list.replaceChildren(loadingAnimation());
    try{records=await window.historyCloud.list();hasLoaded=true;loadFailed=false;notify(records.length?'Your prescription history is ready.':'No prescriptions in history yet.');}
    catch(error){records=[];loadFailed=true;const code=String(error?.code||'unknown');const detail=String(error?.message||'').slice(0,240);notify('History load failed ['+code+']: '+detail,true);console.error('History load failed',error);}
    finally{busy=false;render();}
