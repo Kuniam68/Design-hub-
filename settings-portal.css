@@ -422,3 +422,65 @@ html[data-ms-shell-theme=dim] .workspace-menu-notice {background:#354456;color:#
  html[data-ms-shell-theme=dim] .preview-panel>.page-scaler {filter:invert(.78) hue-rotate(calc(180deg + var(--ms-rx-hue,0deg))) saturate(.8);}
 }
 @media print {html[data-ms-shell-theme] .preview-panel>.page-scaler{filter:none!important;}}
+
+/* v8 — Settings typography and accessibility; screen UI only. */
+#msSettingsDialog .mss-font-gallery {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:11px;
+  margin:14px 0 6px;
+}
+#msSettingsDialog .mss-font-choice {
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:9px;
+  min-height:102px;padding:13px 15px;cursor:pointer;text-align:left;
+  border:1.5px solid var(--mss-line);border-radius:15px;
+  background:var(--mss-surface-alt);color:var(--mss-ink);
+  transition:border-color .18s,background .18s,transform .18s,box-shadow .18s;
+}
+#msSettingsDialog .mss-font-choice strong {font-size:12px;line-height:1.2;color:inherit;}
+#msSettingsDialog .mss-font-glyph {
+  font-size:32px;line-height:1.15;font-weight:600;letter-spacing:-1px;
+  color:var(--mss-ink);
+}
+#msSettingsDialog .mss-font-choice:hover {transform:translateY(-2px);border-color:var(--mss-accent);}
+#msSettingsDialog .mss-font-choice[aria-pressed=true] {
+  background:var(--mss-accent-soft);border:2px solid var(--mss-accent);
+  box-shadow:0 0 0 2px rgba(var(--mss-accent-rgb),.14);
+}
+#msSettingsDialog .mss-font-choice[aria-pressed=true]::after {content:'✓ Selected';font-size:10px;color:var(--mss-ink);font-weight:750;}
+#msSettingsDialog [data-ms-font-example=modern] {font-family:system-ui,sans-serif;}
+#msSettingsDialog [data-ms-font-example=poppins] {font-family:'Poppins',system-ui,sans-serif;}
+#msSettingsDialog [data-ms-font-example=arial] {font-family:Arial,sans-serif;}
+#msSettingsDialog [data-ms-font-example=verdana] {font-family:Verdana,sans-serif;}
+#msSettingsDialog [data-ms-font-example=trebuchet] {font-family:'Trebuchet MS',sans-serif;}
+#msSettingsDialog [data-ms-font-example=serif] {font-family:Georgia,serif;}
+#msSettingsDialog [data-ms-font-example=georgia] {font-family:Georgia,serif;font-style:italic;}
+#msSettingsDialog [data-ms-font-example=monospace] {font-family:ui-monospace,Menlo,monospace;}
+#msSettingsDialog [data-ms-font-example=custom] {font-family:var(--ms-app-font,system-ui,sans-serif);}
+#msSettingsDialog[data-corners=subtle] :is(.mss-theme,.mss-font-choice,.mss-density,.mss-preset,.mss-switch-row,.mss-data-action,.mss-side-link,.mss-close) {border-radius:7px!important;}
+#msSettingsDialog[data-contrast=high] :is(.mss-font-choice,.mss-density,.mss-theme,.mss-switch-row) {border-width:2px!important;}
+#msSettingsDialog[data-contrast=high] .mss-font-choice[aria-pressed=true] {outline:2px solid var(--mss-ink);outline-offset:2px;}
+#msSettingsDialog[data-mode=dark] .mss-font-choice,#msSettingsDialog[data-mode=dim] .mss-font-choice {background:var(--mss-surface-alt);color:var(--mss-ink);}
+#msSettingsDialog .mss-switch-row:has(.mss-switch[aria-checked=true]) {
+  border-color:var(--mss-accent);background:var(--mss-accent-soft);
+}
+#msSettingsDialog .mss-switch-row {transition:background .2s,border-color .2s;}
+@media(max-width:480px){#msSettingsDialog .mss-font-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}#msSettingsDialog .mss-font-choice{min-height:92px;padding:11px;}}
+@media screen {
+  html[data-ms-ui-corners=subtle] :is(.workspace-menu-button,.workspace-close,.workspace-nav-item) {border-radius:6px!important;}
+  html[data-ms-ui-corners=subtle] body>.form-panel :is(.section-card,.med-item,input,select,textarea,.btn) {border-radius:6px!important;}
+  html[data-ms-ui-scale=large] body>.form-panel :is(label,.section-title,.checkbox-wrap label) {font-size:14px!important;}
+  html[data-ms-ui-scale=large] body>.form-panel :is(input,select,textarea,.btn) {font-size:16px!important;}
+  html[data-ms-ui-scale=small] body>.form-panel :is(label,.section-title) {font-size:11px!important;}
+  html[data-ms-ui-scale=small] body>.form-panel :is(input,select,textarea,.btn) {font-size:13px!important;}
+  html[data-ms-ui-spacing=relaxed] body>.form-panel :is(label,.section-card,.form-group,.section-title) {line-height:1.85;}
+  html[data-ms-ui-spacing=tight] body>.form-panel :is(label,.section-card,.form-group,.section-title) {line-height:1.2;}
+  html[data-ms-ui-text-spacing=extra] body>.form-panel :is(label,button,input,select,textarea),
+  html[data-ms-ui-text-spacing=extra] :is(.workspace-header,.workspace-drawer) {letter-spacing:.035em!important;}
+  html[data-ms-ui-transparency=reduce] .workspace-backdrop {background:rgba(3,12,15,.92)!important;}
+  html[data-ms-ui-transparency=reduce] :is(.new-rx-dialog,.my-profile-dialog,.history-dialog,.practice-dialog,.practice-edit-dialog,.patient-directory,.ml-dialog)::backdrop {background:rgba(3,12,15,.92)!important;backdrop-filter:none!important;}
+  html[data-ms-ui-transparency=reduce] #msSettingsDialog::backdrop {background:rgba(3,12,15,.92)!important;backdrop-filter:none!important;}
+  html[data-ms-ui-motion=reduce] body>.form-panel *,html[data-ms-ui-motion=reduce] :is(.workspace-header,.workspace-drawer,#msSettingsDialog) * {animation:none!important;transition:none!important;scroll-behavior:auto!important;}
+  html[data-ms-ui-targets=large] body>.form-panel :is(.btn,.btn-sm,input,select,textarea),html[data-ms-ui-targets=large] .workspace-nav-item {min-height:44px;}
+  html[data-ms-ui-focus=extra] body>.form-panel :is(input,select,textarea,button):focus-visible {outline:3px solid var(--ms-app-accent,#0e8275)!important;outline-offset:3px!important;}
+  html[data-ms-ui-contrast=high] body>.form-panel :is(input,select,textarea,.section-card,.med-item) {border:2px solid var(--ms-ui-border)!important;}
+  html[data-ms-ui-contrast=high] .workspace-header {border-bottom:2px solid var(--ms-ui-border)!important;}
+}
