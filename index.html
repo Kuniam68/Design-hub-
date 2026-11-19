@@ -3208,5 +3208,11 @@ if (new URLSearchParams(location.search).has('editPrescriptionTemplate')) {
 }
 </script>
 <script src="./template-edit-inline.js?v=1"></script>
+
+<!-- Settings-only visual preference bootstrap; prescription workflows are unchanged. -->
+<script type="module" id="msAppearanceBootstrap">
+  import {initializeSettingsAppearance} from './settings-portal.js';
+  initializeSettingsAppearance().catch(error=>console.error('Appearance preferences unavailable:',error));
+</script>
 </body>
 </html>
