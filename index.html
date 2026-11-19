@@ -883,7 +883,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <button type="button" class="workspace-nav-item" data-workspace-action="history"><span>🕘</span>Prescription History</button>
   <button type="button" class="workspace-nav-item" data-workspace-action="patients"><span>👥</span>Patient Directory</button>
   <button type="button" class="workspace-nav-item" data-workspace-action="templates"><span>📋</span>Templates &amp; Medicine Favorites</button>
-  <button type="button" class="workspace-nav-item planned" data-workspace-action="settings"><span>⚙️</span>Settings &amp; Appearance <small>Planned</small></button>
+  <button type="button" class="workspace-nav-item" data-workspace-action="settings"><span>⚙️</span>Settings &amp; Appearance</button>
   <div class="workspace-nav-separator"></div>
   <button type="button" class="workspace-nav-item" data-workspace-action="logout"><span>↪</span>Sign out</button>
   <p class="workspace-menu-notice" id="workspaceMenuNotice" role="status" aria-live="polite">New features will be built and tested here before merging into main.</p>
@@ -902,6 +902,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  if(action==='patients'){toggle(false);window.openPatientDirectory();return;}
  if(action==='templates'){toggle(false);window.openMedicineLibrary();return;}
  if(action==='prescription'){toggle(false);window.location.assign('./index.html?newPrescription=1');return;}
+ if(action==='settings'){toggle(false);import('./settings-portal.js').then(module=>module.openSettings()).catch(error=>{console.error('Settings unavailable:',error);window.alert('Unable to open Settings. Please refresh and try again.');});return;}
  notice.textContent=item.textContent.trim().replace(/Planned$/,'')+' is planned for the next development phase. No records are being saved by this feature yet.';
  });
 })();
