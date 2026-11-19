@@ -275,3 +275,51 @@
  #msSettingsDialog .mss-choice-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
  #msSettingsDialog .mss-backup-actions .mss-data-action {padding:11px}
 }
+
+/* Settings control enhancement: five functional theme modes and no decorative dead panels. */
+#msSettingsDialog .mss-theme-grid {grid-template-columns:repeat(auto-fit,minmax(115px,1fr));}
+#msSettingsDialog .mss-mini.mss-mini-dim {background:#293342;border-color:#48586b}
+#msSettingsDialog .mss-mini-dim .mss-mini-rail {background:#434d61}
+#msSettingsDialog .mss-mini-dim .mss-mini-lines i {background:#59677b}
+#msSettingsDialog .mss-mini-dim .mss-mini-lines i:last-child {background:#bc849e}
+#msSettingsDialog .mss-mini.mss-mini-scheduled {background:linear-gradient(100deg,#f3f8f4 50%,#132937 50%)}
+#msSettingsDialog .mss-mini-scheduled .mss-mini-rail {background:linear-gradient(100deg,#d8ebe1 50%,#2b4859 50%)}
+#msSettingsDialog .mss-mini-scheduled .mss-mini-lines i {background:linear-gradient(100deg,#d8ebe1 50%,#3c5a67 50%)}
+#msSettingsDialog .mss-timed-night {display:none}
+#msSettingsDialog[data-theme-choice=scheduled] .mss-timed-night {display:block}
+#msSettingsDialog .mss-timed-night .mss-section {margin:13px 0}
+#msSettingsDialog .mss-custom-picker {display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;padding:12px;border:1px solid var(--mss-line);border-radius:12px;color:var(--mss-ink)}
+#msSettingsDialog .mss-custom-picker strong,#msSettingsDialog .mss-custom-picker small {display:block}
+#msSettingsDialog .mss-custom-picker strong {font-size:12px}
+#msSettingsDialog .mss-custom-picker small {font-size:10px;color:var(--mss-muted)}
+#msSettingsDialog [data-ms-custom-color] {flex:none;width:57px;height:44px;padding:3px;background:var(--mss-surface);border:1px solid var(--mss-line);border-radius:9px;cursor:pointer}
+#msSettingsDialog .mss-custom-dot {background:var(--mss-accent)}
+#msSettingsDialog .mss-quick-theme {border:1px solid var(--mss-line);padding:8px 11px;border-radius:10px;color:var(--mss-ink);background:var(--mss-accent-soft);white-space:nowrap;font-size:11px;font-weight:700}
+#msSettingsDialog .mss-quick-theme:hover {border-color:var(--mss-accent)}
+#msSettingsDialog .mss-presets {grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}
+#msSettingsDialog[data-mode=dim] {--mss-accent-soft:rgba(var(--mss-accent-rgb),.18);--mss-bg:#1a222e;--mss-surface:#263140;--mss-surface-alt:#303d4e;--mss-ink:#eef3f8;--mss-muted:#c4cddb;--mss-line:#4a5b6e;background:var(--mss-surface);border-color:var(--mss-line);color:var(--mss-ink);color-scheme:dark}
+#msSettingsDialog[data-mode=dim] .mss-sidebar {background:var(--mss-bg)}
+#msSettingsDialog[data-mode=dim] .mss-density,#msSettingsDialog[data-mode=dim] .mss-data-action {background:var(--mss-surface);color:var(--mss-ink)}
+#msSettingsDialog[data-mode=dim] .mss-accent-option {background:var(--mss-surface);color:var(--mss-ink)}
+#msSettingsDialog[data-mode=dim] .mss-theme {background:var(--mss-surface);color:var(--mss-ink)}
+#msSettingsDialog[data-mode=dim] .mss-theme[aria-pressed=true],#msSettingsDialog[data-mode=dim] .mss-density[aria-pressed=true] {background:var(--mss-accent-soft);border-color:var(--mss-accent)}
+#msSettingsDialog[data-large-targets=true] .mss-side-link,#msSettingsDialog[data-large-targets=true] .mss-density,#msSettingsDialog[data-large-targets=true] .mss-accent-option {min-height:48px}
+#msSettingsDialog[data-large-targets=true] .mss-switch-row {min-height:64px}
+#msSettingsDialog[data-short-descriptions=true] .mss-hint,#msSettingsDialog[data-short-descriptions=true] .mss-intro {display:none}
+#msSettingsDialog .mss-safe-note {display:none}
+@media(max-width:760px){#msSettingsDialog .mss-theme-grid {grid-template-columns:repeat(3,minmax(0,1fr))}#msSettingsDialog .mss-presets {grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){#msSettingsDialog .mss-theme-grid {grid-template-columns:repeat(2,minmax(0,1fr))}#msSettingsDialog .mss-quick-theme {padding:7px;font-size:10px}}
+/* Theme the workspace navigation only; do not restyle any of the existing six menus. */
+html[data-ms-shell-theme=dark] .workspace-header,html[data-ms-shell-theme=dark] .workspace-drawer {background:#132129;color:#edf5f4;border-color:#35505c}
+html[data-ms-shell-theme=dim] .workspace-header,html[data-ms-shell-theme=dim] .workspace-drawer {background:#263140;color:#eef3f8;border-color:#4a5b6e}
+html[data-ms-shell-theme=dark] .workspace-brand small,html[data-ms-shell-theme=dim] .workspace-brand small {color:#b5c7cc}
+html[data-ms-shell-theme=dark] .workspace-menu-button,html[data-ms-shell-theme=dark] .workspace-close {background:#263d45;color:#e5f4f2;border-color:#405660}
+html[data-ms-shell-theme=dim] .workspace-menu-button,html[data-ms-shell-theme=dim] .workspace-close {background:#3c4a5c;color:#edf3f8;border-color:#536173}
+html[data-ms-shell-theme=dark] .workspace-nav-item,html[data-ms-shell-theme=dim] .workspace-nav-item {color:#eaf3f4}
+html[data-ms-shell-theme=dark] .workspace-nav-item:hover,html[data-ms-shell-theme=dark] .workspace-nav-item:focus-visible {background:#233a43}
+html[data-ms-shell-theme=dim] .workspace-nav-item:hover,html[data-ms-shell-theme=dim] .workspace-nav-item:focus-visible {background:#3b4d5e}
+html[data-ms-shell-theme=dark] .workspace-drawer-head,html[data-ms-shell-theme=dark] .workspace-nav-separator {border-color:#35505c}
+html[data-ms-shell-theme=dim] .workspace-drawer-head,html[data-ms-shell-theme=dim] .workspace-nav-separator {border-color:#4a5b6e}
+html[data-ms-shell-theme=dark] .workspace-menu-notice {background:#203a43;color:#d8e8e6}
+html[data-ms-shell-theme=dim] .workspace-menu-notice {background:#354456;color:#dce4ee}
+@media print {#msSettingsDialog{display:none!important}}
