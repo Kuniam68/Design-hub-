@@ -29,7 +29,7 @@
       (
         item.origin === 'prescription' ||
         item.source === 'prescription' ||
-        (typeof item.notes === 'string' && item.notes.startsWith('Saved from Prescription History')) ||
+        (typeof item.notes === 'string' && (item.notes.startsWith('Saved from Prescription History') || item.notes.startsWith('Complete prescription template · Includes example patient details'))) ||
         !item.fullRecord
       )
     );
