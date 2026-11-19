@@ -151,8 +151,9 @@ window.saveDoctorProfileToCloud=async function(){
   const user=auth.currentUser;
   if(!user){showProfileStatus('Please sign in first.',true);return false;}
   if(profileLoadedFor!==user.uid){showProfileStatus('Profile has not loaded successfully. Please reload before saving.',true);return false;}
+  const button=document.getElementById('profileSaveButton');
   const data=Object.fromEntries(profileFields.map(id=>[id,document.getElementById(id)?.value.trim()||'']));
-
+  if(button)button.disabled=true;
   showProfileStatus('Saving your profile securely…');
   try{
     await setDoc(doc(db,'doctors',user.uid),{...data,profilePhoto:doctorProfilePhoto,updatedAt:serverTimestamp()},{merge:true});
@@ -162,7 +163,7 @@ window.saveDoctorProfileToCloud=async function(){
     console.error('Profile save failed:',error);
     showProfileStatus('Could not save. Check your connection and Firestore permissions.',true);
     return false;
-  }
+  }finally{if(button)button.disabled=false;}
 };
 onAuthStateChanged(auth,user=>{
   if(!user){location.replace('./login.html');return;}
@@ -1634,7 +1635,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
   <div class="section-card" id="doctor-profile-section">
     <div class="section-title">
       Doctor & Chamber Profile
-      
+      <button class="btn btn-sm" id="profileSaveButton" onclick="saveProfile()">💾 Save My Profile</button>
     </div>
     <div class="row">
       <div class="form-group"><label>Doctor Name</label><input type="text" id="dName" placeholder="Dr. Name" oninput="updatePreview()"></div>
@@ -1954,7 +1955,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     <button class="btn" id="btnDownload" onclick="downloadPDF()" style="background:#0f766e; font-size:15px; padding:15px; flex:1;">
       📥 Download PDF
     </button>
-    <button class="btn" id="templatePrintButton" type="button" onclick="printPrescription()" style="background:#0284c7; font-size:15px; padding:15px; flex:1;">
+    <button class="btn" type="button" onclick="printPrescription()" style="background:#0284c7; font-size:15px; padding:15px; flex:1;">
       🖨️ Print A4
     </button>
   </div>
@@ -2009,16 +2010,6 @@ window.setMediScriptTemplateMode=(enabled,name='')=>{
  if(!enabled){window.mediscriptTemplateName='';window.mediscriptTemplateId='';}
  const banner=document.getElementById('templateWorkspaceBanner');banner.hidden=!enabled;
  document.getElementById('btnDownload')?.setAttribute('title',enabled?'Download PDF and save complete template':'Download PDF and save to Prescription History');
-};
-// This experiment changes only action presentation; the PDF/save behavior is unchanged.
-window.configureTemplateEditorActions=()=>{
- const params=new URLSearchParams(location.search);
- const editingDetails=Boolean(params.get('templateId'))&&params.get('edit')==='1';
- const openingSaved=Boolean(params.get('templateId'))&&!editingDetails;
- const download=document.getElementById('btnDownload');
- const print=document.getElementById('templatePrintButton');
- if(download){download.textContent=openingSaved?'📥 Download PDF':editingDetails?'✓ Save the Changes':'✓ Save the Template';download.title=openingSaved?'Download PDF and save template changes':editingDetails?'Download PDF, save changes and return to Templates & Favorites':'Download PDF, save template and return to Templates & Favorites';}
- if(print){print.hidden=!openingSaved;print.style.display=openingSaved?'':'none';}
 };
 window.beginFullPrescriptionTemplate=async()=>{
  if(!(await window.mediScriptConfirm('Create a new template?','Your current unsaved editor content will be replaced. Your doctor profile remains unchanged.','Yes',false,'No')))return;
@@ -2127,7 +2118,6 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
     updatePreview();
     if(window.MEDISCRIPT_TEMPLATE_ONLY){
       window.setMediScriptTemplateMode?.(true,'New prescription template');
-      window.configureTemplateEditorActions?.();
       const templateId=new URLSearchParams(location.search).get('templateId');
       if(templateId){try{
         const saved=JSON.parse(localStorage.getItem('mediscript-shortcuts-v1')||'[]');
@@ -2234,6 +2224,14 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
   });
 
 
+  function saveProfile() {
+    if(typeof window.saveDoctorProfileToCloud!=='function'){
+      const el=document.getElementById('profileSaveStatus');
+      if(el)el.textContent='Profile service is loading. Please try again.';
+      return;
+    }
+    window.saveDoctorProfileToCloud();
+  }
 
     function toggleSystem(sys, isChecked) {
     document.getElementById(`sub-${sys}`).style.display = isChecked ? 'block' : 'none';
