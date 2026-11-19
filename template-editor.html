@@ -1482,24 +1482,27 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
  window.saveFullPrescriptionTemplate=()=>{
   try{
    const record=window.getMediScriptPrescriptionSnapshot?.();
-   if(!record){status.textContent='Prescription editor is not ready. Please try again.';return false;}
-   const name=String((window.mediscriptTemplateName==='New prescription template'?record.diagnosis:window.mediscriptTemplateName)||record.diagnosis||'New prescription template').trim().slice(0,100);
+   if(!record)throw new Error('Template editor not ready');
+   const medicines=(record.medicines||[]).map(x=>Array.isArray(x)?x:(x.values||[]));
+   const saved=JSON.parse(localStorage.getItem(storageKey)||'[]');
+   if(!Array.isArray(saved))throw new Error('Invalid template storage');
+   const params=new URLSearchParams(location.search);
+   const editId=params.get('edit')==='1'?params.get('templateId'):null;
+   const existing=editId?saved.find(x=>x.id===editId&&x.type==='templates'):null;
+   if(editId&&!existing)throw new Error('Original template not found; no duplicate created');
+   const name=String(record.diagnosis||window.mediscriptTemplateName||'New prescription template').trim().slice(0,100)||'New prescription template';
    const fullRecord=JSON.parse(JSON.stringify(record));delete fullRecord.editedFrom;
-   const medicines=fullRecord.medicines.map(x=>Array.isArray(x)?x:(x.values||[]));
-   const old=items;items=read();
-   const existing=window.mediscriptTemplateId&&items.find(x=>x.id===window.mediscriptTemplateId);
-   if(existing){existing.fullRecord=fullRecord;existing.medicines=medicines;existing.created=Date.now();}
-   else{const id='ml'+Date.now()+Math.random().toString(36).slice(2);items.push({id,type:'templates',name,notes:'Complete prescription template · Includes example patient details',medicines,advice:'',fullRecord,created:Date.now()});window.mediscriptTemplateId=id;}
-   if(!persist()){items=old;status.textContent='Template not saved. Browser storage may be full or unavailable. Please do not discard your prescription.';window.mediScriptConfirm?.('Template not saved','Browser storage is full or unavailable. Your editor remains intact. Please free storage and try again.','OK',false,'Close');return false;}
-   window.dispatchEvent(new Event('mediscript-template-saved'));
-   // Opening a saved template is a reusable prescription workflow: stay in the editor after export.
-   // Creating a new template or choosing Edit details still returns to the template collection.
-   const params=new URLSearchParams(window.location.search);
-   const openedSavedTemplate=Boolean(params.get('templateId'))&&params.get('edit')!=='1';
-   if(!openedSavedTemplate)window.setMediScriptTemplateMode?.(false);
-   if(window.MEDISCRIPT_TEMPLATE_ONLY){if(!openedSavedTemplate)setTimeout(()=>window.location.assign('./index.html?openTemplates=1'),1400);}else window.openMedicineLibrary?.();
+   if(existing){existing.fullRecord=fullRecord;existing.medicines=medicines;existing.name=name;existing.created=Date.now();}
+   else saved.push({id:'ml'+Date.now()+Math.random().toString(36).slice(2),type:'templates',name,notes:'Complete prescription template',medicines,advice:'',fullRecord,created:Date.now()});
+   localStorage.setItem(storageKey,JSON.stringify(saved));
+   window.location.assign('./index.html?openTemplates=1');
    return true;
-  }catch(error){console.error('Template save failed:',error);status.textContent='Template could not be saved: '+String(error?.message||'Unexpected error');window.mediScriptConfirm?.('Template not saved','The template could not be saved. Your prescription editor is still available. Please retry after checking browser storage.','OK',false,'Close');return false;}
+  }catch(error){
+   console.error('Template save failed',error);
+   status.textContent='Template not saved: '+String(error.message||error);
+   window.mediScriptConfirm?.('Template not saved','The template could not be saved. Your editor content is still available.','OK',false,'Close');
+   return false;
+  }
  };
  window.openMedicineLibrary=()=>{items=read();status.textContent='';dialog.showModal();setTab('templates');};
 })();
@@ -1955,7 +1958,7 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
     <button class="btn" id="btnDownload" onclick="downloadPDF()" style="background:#0f766e; font-size:15px; padding:15px; flex:1;">
       📥 Download PDF
     </button>
-    <button class="btn" type="button" onclick="printPrescription()" style="background:#0284c7; font-size:15px; padding:15px; flex:1;">
+    <button class="btn" id="templatePrintButton" type="button" onclick="printPrescription()" style="background:#0284c7; font-size:15px; padding:15px; flex:1;">
       🖨️ Print A4
     </button>
   </div>
@@ -2002,23 +2005,27 @@ window.mediScriptConfirm=(title,description,accept='Continue',danger=false,cance
  dialog.showModal();no.focus();
 });
 </script>
-<div id="templateWorkspaceBanner" class="template-workspace-banner" hidden><span>▤ TEMPLATE WORKSPACE · Complete prescription saved only to Templates & Favorites</span><button type="button" id="templateWorkspaceExit">Exit template mode</button></div>
+<div id="templateWorkspaceBanner" class="template-workspace-banner"><span>▤ TEMPLATE WORKSPACE · Complete prescription saved only to Templates & Favorites</span><button type="button" id="templateWorkspaceExit">Exit template mode</button></div>
 <script>
-window.mediscriptTemplateMode=Boolean(window.MEDISCRIPT_TEMPLATE_ONLY);window.mediscriptTemplateName='';window.mediscriptTemplateId='';
+window.mediscriptTemplateMode=true;
+window.mediscriptTemplateName='New prescription template';
+window.mediscriptTemplateId='';
 window.setMediScriptTemplateMode=(enabled,name='')=>{
- window.mediscriptTemplateMode=Boolean(enabled||window.MEDISCRIPT_TEMPLATE_ONLY);window.mediscriptTemplateName=name||window.mediscriptTemplateName||'New prescription template';
- if(!enabled){window.mediscriptTemplateName='';window.mediscriptTemplateId='';}
- const banner=document.getElementById('templateWorkspaceBanner');banner.hidden=!enabled;
- document.getElementById('btnDownload')?.setAttribute('title',enabled?'Download PDF and save complete template':'Download PDF and save to Prescription History');
+ window.mediscriptTemplateMode=true;
+ window.mediscriptTemplateName=name||window.mediscriptTemplateName||'New prescription template';
+ document.getElementById('templateWorkspaceBanner').hidden=false;
 };
-window.beginFullPrescriptionTemplate=async()=>{
- if(!(await window.mediScriptConfirm('Create a new template?','Your current unsaved editor content will be replaced. Your doctor profile remains unchanged.','Yes',false,'No')))return;
- window.startNewPrescription(true);
- window.setMediScriptTemplateMode(true,'New prescription template');
- document.getElementById('pName')?.focus();
+window.configureTemplateActions=()=>{
+ const editing=new URLSearchParams(location.search).get('edit')==='1';
+ const save=document.getElementById('btnDownload');
+ const print=document.getElementById('templatePrintButton');
+ save.textContent=editing?'✓ Save the Changes':'✓ Save the Template';
+ save.title=editing?'Update the existing saved template':'Save a new template to Templates & Favorites';
+ if(print){print.hidden=true;print.style.display='none';}
 };
+window.beginFullPrescriptionTemplate=()=>window.location.assign('./template-editor.html');
 document.getElementById('templateWorkspaceExit').onclick=async()=>{
- if(await window.mediScriptConfirm('Return to Templates & Favorites?','Leave the template editor and return to your template collection. Unsaved edits will be lost.','Yes',false,'No'))window.location.assign('./index.html?openTemplates=1');
+ if(await window.mediScriptConfirm('Exit template mode?','Return to Templates & Favorites? Unsaved template changes will be lost.','Yes',false,'No'))window.location.assign('./index.html?openTemplates=1');
 };
 </script>
 <!-- ================= RIGHT PANEL: LIVE PREVIEW ================= -->
@@ -2114,37 +2121,43 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
 
 
   window.onload = function() {
-    addMedicine();
-    updatePreview();
-    if(window.MEDISCRIPT_TEMPLATE_ONLY){
-      window.setMediScriptTemplateMode?.(true,'New prescription template');
-      const templateId=new URLSearchParams(location.search).get('templateId');
-      if(templateId){try{
-        const saved=JSON.parse(localStorage.getItem('mediscript-shortcuts-v1')||'[]');
-        const item=Array.isArray(saved)?saved.find(x=>x.id===templateId&&x.type==='templates'):null;
-        if(item){
-          window.mediscriptTemplateId=item.id;
-          window.setMediScriptTemplateMode(true,item.name);
-          // Saved templates open like ordinary editable prescriptions: hide the creation-only banner.
-          document.getElementById('templateWorkspaceBanner').hidden=true;
-          if(item.fullRecord){window.restoreMediScriptPrescription?.(item.fullRecord);}
-          else{
-            const container=document.getElementById('med-container');
-            container.replaceChildren();medCount=0;
-            (item.medicines||[]).forEach(values=>{
-              addMedicine();
-              const row=container.lastElementChild;
-              const controls=Array.from(row.querySelectorAll('input,select,textarea'));
-              controls.forEach((control,i)=>{if(i<values.length)applyValue(control,values[i]);});
-              const form=row.querySelector('.m-form');if(form)toggleFormMode(form);
-              controls.filter(el=>el.tagName==='SELECT').forEach(el=>{if(el.classList.contains('m-unit')||el.classList.contains('i-unit'))toggleCustom(el);});
-            });
-            if(!container.children.length)addMedicine();
-            if(typeof item.advice==='string')document.getElementById('advice').value=item.advice;
-            updatePreview();
-          }
-        }else window.mediScriptConfirm?.('Template unavailable','The selected template could not be found in this browser.','OK',false,'Close');
-      }catch(e){console.error('Unable to open template',e);window.mediScriptConfirm?.('Unable to load template','Please return to the template collection and try again.','OK',false,'Close');}}
+    // The template editor has its own HTML document, controls, and styles.
+    // Never import a prescription draft when creating a template.
+    startNewPrescription(true);
+    window.configureTemplateActions();
+    const params=new URLSearchParams(location.search);
+    const templateId=params.get('templateId');
+    if(!templateId){updatePreview();return;}
+    try {
+      const saved=JSON.parse(localStorage.getItem('mediscript-shortcuts-v1')||'[]');
+      const item=Array.isArray(saved)?saved.find(x=>x.id===templateId&&x.type==='templates'):null;
+      if(!item)throw new Error('Template not found in browser storage');
+      window.mediscriptTemplateId=item.id;
+      window.mediscriptTemplateName=item.name||'Saved template';
+      if(item.fullRecord){
+        const record=structuredClone(item.fullRecord);
+        if(!record.version)record.version=1;
+        if(!record.fields)record.fields={};
+        if(!Array.isArray(record.medicines))record.medicines=(item.medicines||[]).map(values=>({values}));
+        window.restoreMediScriptPrescription(record);
+      }else{
+        const container=document.getElementById('med-container');
+        container.replaceChildren();medCount=0;
+        (item.medicines||[]).forEach(values=>{
+          addMedicine();
+          const row=container.lastElementChild;
+          Array.from(row.querySelectorAll('input,select,textarea')).forEach((control,j)=>{
+            if(j<values.length){if(control.type==='checkbox')control.checked=Boolean(values[j]);else control.value=String(values[j]??'');}
+          });
+          const form=row.querySelector('.m-form');if(form)toggleFormMode(form);
+        });
+        if(!container.children.length)addMedicine();
+        if(typeof item.advice==='string')document.getElementById('advice').value=item.advice;
+        updatePreview();
+      }
+    }catch(error){
+      console.error('Template load error',error);
+      window.mediScriptConfirm?.('Unable to load template','The saved template could not be loaded. Please return to Templates & Favorites and try again.','OK',false,'Close');
     }
   };
 
@@ -2787,12 +2800,14 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
   window.addEventListener('resize', fitPreview);
 
   function printPrescription(){
+    if(window.MEDISCRIPT_TEMPLATE_ONLY)return;
     updatePreview();
     if(window.MEDISCRIPT_TEMPLATE_ONLY||window.mediscriptTemplateMode){if(!window.saveFullPrescriptionTemplate?.())return;}else window.capturePrescriptionToHistory?.();
     window.print();
   }
   /* ===== PDF EXPORT ===== */
   async function downloadPDF() {
+    if(window.MEDISCRIPT_TEMPLATE_ONLY){window.saveFullPrescriptionTemplate?.();return;}
     updatePreview();
 
     const btn = document.getElementById('btnDownload');
