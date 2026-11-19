@@ -1996,6 +1996,22 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 .msp-choice-actions button{flex:1;min-width:0;padding:13px 8px;border-radius:12px;font:inherit;font-weight:800;cursor:pointer;border:1px solid #cbe4d8;background:#f0f7f3;color:#356c5e}
 .msp-choice-actions .msp-choice-accept{background:#087d70;color:white;border-color:#087d70}
 .msp-choice-actions .msp-choice-accept.danger{background:#bd4841;border-color:#bd4841}
+/* Visual-only: Yes and No begin identical; the pressed button highlights. */
+#mspChoice .msp-choice-actions .msp-choice-accept:not(.danger){
+  background:#f0f7f3;
+  color:#356c5e;
+  border-color:#cbe4d8;
+}
+#mspChoice .msp-choice-actions button:focus{
+  outline:none;
+  box-shadow:none;
+}
+#mspChoice .msp-choice-actions button:active{
+  background:#087d70!important;
+  color:#fff!important;
+  border-color:#087d70!important;
+}
+
 @media(max-width:440px){.msp-choice-inner{padding:25px 18px}.msp-choice-actions{flex-direction:column-reverse}}
 
 /* Template library: anchored sorting popover, no browser-native select overlay */
