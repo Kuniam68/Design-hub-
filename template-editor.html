@@ -2014,7 +2014,7 @@ window.beginFullPrescriptionTemplate=async()=>{
  document.getElementById('pName')?.focus();
 };
 document.getElementById('templateWorkspaceExit').onclick=async()=>{
- if(await window.mediScriptConfirm('Exit template workspace?','The current content stays in the editor, but future downloads will save to Prescription History.','Exit workspace'))window.setMediScriptTemplateMode(false);
+ if(await window.mediScriptConfirm('Return to Templates & Favorites?','Leave the template editor and return to your template collection. Unsaved edits will be lost.','Yes',false,'No'))window.location.assign('./index.html?openTemplates=1');
 };
 </script>
 <!-- ================= RIGHT PANEL: LIVE PREVIEW ================= -->
@@ -2112,7 +2112,11 @@ document.getElementById('templateWorkspaceExit').onclick=async()=>{
   window.onload = function() {
     addMedicine();
     updatePreview();
-    if(window.MEDISCRIPT_TEMPLATE_ONLY){window.setMediScriptTemplateMode?.(true,'New prescription template');}
+    if(window.MEDISCRIPT_TEMPLATE_ONLY){
+      window.setMediScriptTemplateMode?.(true,'New prescription template');
+      const templateId=new URLSearchParams(location.search).get('templateId');
+      if(templateId){try{const saved=JSON.parse(localStorage.getItem('mediscript-shortcuts-v1')||'[]');const item=Array.isArray(saved)?saved.find(x=>x.id===templateId&&x.fullRecord):null;if(item){window.mediscriptTemplateId=item.id;window.setMediScriptTemplateMode(true,item.name);setTimeout(()=>window.restoreMediScriptPrescription?.(item.fullRecord),0);}else window.mediScriptConfirm?.('Template unavailable','The selected template could not be found in this browser.','OK',false,'Close');}catch(e){console.error('Unable to open template',e);}}
+    }
   };
 
   /* ===== NEW PRESCRIPTION =====
