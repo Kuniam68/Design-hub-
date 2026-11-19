@@ -1953,11 +1953,8 @@ body{padding-top:var(--workspace-header-height);height:100dvh;box-sizing:border-
 
   <!-- ACTION BUTTONS -->
   <div class="prescription-action-row" style="display:flex; gap:10px; margin-bottom:50px; flex-wrap:wrap;">
-    <button class="btn" id="btnDownload" onclick="downloadPDF()" style="background:#0f766e; font-size:15px; padding:15px; flex:1;">
-      📥 Download PDF
-    </button>
-    <button class="btn" id="templatePrintButton" type="button" onclick="printPrescription()" style="background:#0284c7; font-size:15px; padding:15px; flex:1;">
-      🖨️ Print A4
+    <button class="btn" id="btnDownload" type="button" onclick="downloadPDF()" style="background:#0f766e; font-size:15px; padding:15px; flex:1;">
+      Save the Template
     </button>
   </div>
 </div>
@@ -2013,6 +2010,7 @@ window.setMediScriptTemplateMode=(enabled,name='')=>{
  window.mediscriptTemplateName=name||window.mediscriptTemplateName||'New prescription template';
  document.getElementById('templateWorkspaceBanner').hidden=false;
 };
+window.addEventListener('DOMContentLoaded',window.configureTemplateActions);
 window.configureTemplateActions=()=>{
  const editing=new URLSearchParams(location.search).get('edit')==='1';
  const save=document.getElementById('btnDownload');
