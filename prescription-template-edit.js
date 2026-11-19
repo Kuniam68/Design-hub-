@@ -56,12 +56,13 @@
       // Use the actual normal Prescription Portal, including its original editable fields.
       // Older prescription-history templates only retained medicines and advice, not a full
       // patient record. In that case start with an empty prescription and restore saved data.
+      const sourceRecord = template.editRecord || template.fullRecord;
       let snapshot;
-      if (template.fullRecord &&
-          template.fullRecord.version === 1 &&
-          template.fullRecord.fields &&
-          Array.isArray(template.fullRecord.medicines)) {
-        snapshot = JSON.parse(JSON.stringify(template.fullRecord));
+      if (sourceRecord &&
+          sourceRecord.version === 1 &&
+          sourceRecord.fields &&
+          Array.isArray(sourceRecord.medicines)) {
+        snapshot = JSON.parse(JSON.stringify(sourceRecord));
       } else {
         snapshot = window.getMediScriptPrescriptionSnapshot();
         snapshot.medicines = (Array.isArray(template.medicines) ? template.medicines : [])
@@ -73,9 +74,9 @@
 
       window.restoreMediScriptPrescription(snapshot);
 
-      if (!template.fullRecord ||
-          !template.fullRecord.fields ||
-          !Array.isArray(template.fullRecord.medicines)) {
+      if (!sourceRecord ||
+          !sourceRecord.fields ||
+          !Array.isArray(sourceRecord.medicines)) {
         const advice = document.getElementById('advice');
         if (advice && typeof template.advice === 'string') advice.value = template.advice;
         const diagnosis = document.getElementById('provDx');
@@ -117,7 +118,6 @@
           const updated = {
             ...saved[index],
             origin: 'prescription',
-            fullRecord: JSON.parse(JSON.stringify(record)),
             medicines: record.medicines.map(item =>
               Array.isArray(item) ? item.slice() :
               Array.isArray(item && item.values) ? item.values.slice() : []
@@ -125,6 +125,10 @@
             advice: String(document.getElementById('advice')?.value || ''),
             created: Date.now()
           };
+          // Preserve the original Add to prescription path: templates that lacked
+          // fullRecord must continue to append medicines, not replace a prescription.
+          if (saved[index].fullRecord) updated.fullRecord = JSON.parse(JSON.stringify(record));
+          else updated.editRecord = JSON.parse(JSON.stringify(record));
           // Keep the original template name and notes; user edits change the
           // clinical content, not the saved item's identity or provenance.
           saved[index] = updated;
